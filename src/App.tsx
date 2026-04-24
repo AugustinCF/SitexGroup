@@ -338,11 +338,10 @@ const HomePage = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-bold mb-4 italic"
-          >
+            className="text-4xl md:text-5xl font-bold mb-4">
             Le Nostre Competenze
           </motion.h2>
-          <p className="text-slate-600 max-w-2xl mx-auto font-medium">
+          <p className="text-slate-600 max-w-2xl mx-auto font-medium italic">
             Soluzioni tecnologiche all'avanguardia per ottimizzare ogni fase del processo produttivo metalmeccanico.
           </p>
         </div>
