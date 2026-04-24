@@ -188,7 +188,7 @@ const ServiceCard = ({ service, index }: { service: any; index: number }) => {
       <ul className="space-y-3">
         {service.items.map((item: string, i: number) => (
           <li key={i} className="flex items-start text-sm text-slate-700">
-            <CheckCircle2 size={16} className="text-gold mr-3 mt-1 flex-shrink-0" />
+            <CheckCircle2 size={16} className="text-rosso-rosso-rosso mr-3 mt-1 flex-shrink-0" />
             <span>{item}</span>
           </li>
         ))}
