@@ -56,8 +56,11 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <Link to="/" className={`text-2xl font-display font-bold tracking-tighter ${isScrolled || !isHome ? 'text-brand-900' : 'text-white'}`}>
-              {COMPANY_NAME}
+            <Link to="/" className={`flex items-center gap-3 text-2xl font-display font-bold tracking-tighter ${isScrolled || !isHome ? 'text-brand-900' : 'text-white'}`}>
+              <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center text-white shadow-lg overflow-hidden">
+                <Zap size={24} fill="currentColor" />
+              </div>
+              <span>{COMPANY_NAME}</span>
             </Link>
           </div>
           
