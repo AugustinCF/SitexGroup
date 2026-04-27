@@ -8,9 +8,7 @@
   --color-brand-900: #1B2B4B;
   --color-brand-800: #2D3E64;
   --color-accent: #B25E12;
-  --color-goldOLD: #A68F23;
-  --color-gold: #d3c068;
-  --color-rosso-rosso-rosso:#b40a00
+  --color-gold: #A68F23;
 }
 
 @layer base {

@@ -28,6 +28,7 @@ import { AssistancePage } from './pages/Assistance';
 import { WeldingPage } from './pages/Welding';
 import { CompressorsPage } from './pages/Compressors';
 import { BrandsPage } from './pages/Brands';
+import { CatalogPage } from './pages/Catalog';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -45,6 +46,7 @@ const Navbar = () => {
     { name: 'Home', href: '/' },
     { name: 'Saldatura', href: '/saldatura' },
     { name: 'Compressori', href: '/compressori' },
+    { name: 'Catalogo', href: '/catalogo' },
     { name: 'Assistenza', href: '/assistenza' },
     { name: 'Marchi', href: '/marchi' },
   ];
@@ -180,7 +182,7 @@ const ServiceCard = ({ service, index }: { service: any; index: number }) => {
       transition={{ delay: index * 0.1 }}
       className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-xl transition-all group"
     >
-      <div className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center mb-6 text-rosso-rosso-rosso group-hover:bg-rosso-rosso-rosso group-hover:text-white transition-colors">
+      <div className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center mb-6 text-gold group-hover:bg-gold group-hover:text-white transition-colors">
         <Icon size={28} />
       </div>
       <h3 className="text-2xl font-bold mb-4">{service.title}</h3>
@@ -188,7 +190,7 @@ const ServiceCard = ({ service, index }: { service: any; index: number }) => {
       <ul className="space-y-3">
         {service.items.map((item: string, i: number) => (
           <li key={i} className="flex items-start text-sm text-slate-700">
-            <CheckCircle2 size={16} className="text-rosso-rosso-rosso mr-3 mt-1 flex-shrink-0" />
+            <CheckCircle2 size={16} className="text-gold mr-3 mt-1 flex-shrink-0" />
             <span>{item}</span>
           </li>
         ))}
@@ -296,26 +298,54 @@ const Contact = () => {
             
             <div className="bg-slate-900 p-12 lg:p-16 text-white">
               <h3 className="text-2xl font-bold mb-8 italic">Richiedi un preventivo gratuito</h3>
-              <form className="space-y-4">
+              <form 
+                className="space-y-4"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const data = {
+                    name: formData.get('name'),
+                    company: formData.get('company'),
+                    email: formData.get('email'),
+                    message: formData.get('message'),
+                  };
+                  
+                  try {
+                    const response = await fetch('/api/contact', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(data),
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                      alert('Messaggio inviato con successo!');
+                      (e.target as HTMLFormElement).reset();
+                    }
+                  } catch (error) {
+                    console.error('Errore:', error);
+                    alert('Si è verificato un errore durante l\'invio.');
+                  }
+                }}
+              >
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-400">Nome</label>
-                    <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 outline-none focus:border-accent transition-colors" />
+                    <input name="name" type="text" required className="w-full bg-white/5 border border-white/10 rounded-lg p-3 outline-none focus:border-accent transition-colors" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-400">Azienda</label>
-                    <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 outline-none focus:border-accent transition-colors" />
+                    <input name="company" type="text" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 outline-none focus:border-accent transition-colors" />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-400">Email</label>
-                  <input type="email" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 outline-none focus:border-accent transition-colors" />
+                  <input name="email" type="email" required className="w-full bg-white/5 border border-white/10 rounded-lg p-3 outline-none focus:border-accent transition-colors" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-400">Messaggio</label>
-                  <textarea className="w-full bg-white/5 border border-white/10 rounded-lg p-3 h-32 outline-none focus:border-accent transition-colors" />
+                  <textarea name="message" required className="w-full bg-white/5 border border-white/10 rounded-lg p-3 h-32 outline-none focus:border-accent transition-colors" />
                 </div>
-                <button className="w-full py-4 bg-accent hover:brightness-110 text-white font-bold rounded-lg transition-all shadow-lg shadow-accent/20">
+                <button type="submit" className="w-full py-4 bg-accent hover:brightness-110 text-white font-bold rounded-lg transition-all shadow-lg shadow-accent/20">
                   Invia Messaggio
                 </button>
               </form>
@@ -338,10 +368,11 @@ const HomePage = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-bold mb-4">
+            className="text-4xl md:text-5xl font-bold mb-4 italic"
+          >
             Le Nostre Competenze
           </motion.h2>
-          <p className="text-slate-600 max-w-2xl mx-auto font-medium italic">
+          <p className="text-slate-600 max-w-2xl mx-auto font-medium">
             Soluzioni tecnologiche all'avanguardia per ottimizzare ogni fase del processo produttivo metalmeccanico.
           </p>
         </div>
@@ -399,6 +430,7 @@ export default function App() {
           <Route path="/saldatura" element={<WeldingPage />} />
           <Route path="/compressori" element={<CompressorsPage />} />
           <Route path="/marchi" element={<BrandsPage />} />
+          <Route path="/catalogo" element={<CatalogPage />} />
         </Routes>
         
         <footer className="bg-brand-900 border-t border-white/10 py-12 text-slate-500 text-sm">
