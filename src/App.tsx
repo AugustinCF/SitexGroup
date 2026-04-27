@@ -30,6 +30,7 @@ import { CompressorsPage } from './pages/Compressors';
 import { BrandsPage } from './pages/Brands';
 import { CatalogPage } from './pages/Catalog';
 import { LoginPage } from './pages/Login';
+import { ProductDetailPage } from './pages/ProductDetail';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -433,6 +434,7 @@ export default function App() {
           <Route path="/marchi" element={<BrandsPage />} />
           <Route path="/catalogo" element={<CatalogPage />} />
           <Route path="/accedi-al-catalogo" element={<LoginPage />} />
+          <Route path="/prodotto/:id" element={<ProductDetailPage />} />
         </Routes>
         
         <footer className="bg-brand-900 border-t border-white/10 py-12 text-slate-500 text-sm">

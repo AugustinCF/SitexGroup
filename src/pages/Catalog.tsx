@@ -7,14 +7,15 @@ export const CatalogPage = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     internalCode: '',
-    imageUrl: '',
     category: '',
     brand: '',
+    condition: 'Nuovo',
     price: 0
   });
 
@@ -47,19 +48,31 @@ export const CatalogPage = () => {
     e.preventDefault();
     if (!isAdmin) return;
 
+    const data = new FormData();
+    data.append('title', formData.title);
+    data.append('description', formData.description);
+    data.append('internalCode', formData.internalCode);
+    data.append('category', formData.category);
+    data.append('brand', formData.brand);
+    data.append('condition', formData.condition);
+    data.append('price', formData.price.toString());
+
+    if (selectedFiles) {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        data.append('images', selectedFiles[i]);
+      }
+    }
+
     try {
       const response = await fetch('/api/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          imageUrl: formData.imageUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'
-        })
+        body: data
       });
 
       if (response.ok) {
         setIsAdding(false);
-        setFormData({ title: '', description: '', internalCode: '', imageUrl: '', category: '', brand: '', price: 0 });
+        setFormData({ title: '', description: '', internalCode: '', category: '', brand: '', condition: 'Nuovo', price: 0 });
+        setSelectedFiles(null);
         fetchProducts();
       }
     } catch (error) {
@@ -185,11 +198,32 @@ export const CatalogPage = () => {
                   value={formData.price}
                   onChange={e => setFormData({...formData, price: Number(e.target.value)})}
                 />
+                <div className="flex bg-slate-50 border border-slate-200 rounded-lg p-1">
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, condition: 'Nuovo'})}
+                    className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${formData.condition === 'Nuovo' ? 'bg-brand-900 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    Nuovo
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({...formData, condition: 'Usato'})}
+                    className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${formData.condition === 'Usato' ? 'bg-brand-900 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    Usato
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Immagini Prodotto (max 10)</label>
                 <input 
-                  placeholder="URL Immagine"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
-                  value={formData.imageUrl}
-                  onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={e => setSelectedFiles(e.target.files)}
+                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gold/10 file:text-gold hover:file:bg-gold/20"
                 />
               </div>
               <div className="flex gap-4 pt-4">
@@ -217,22 +251,29 @@ export const CatalogPage = () => {
               layout
               className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 group hover:shadow-xl transition-all flex flex-col"
             >
-              <div className="h-56 relative bg-slate-100 overflow-hidden">
+              <Link to={`/prodotto/${product.id}`} className="h-56 relative bg-slate-100 overflow-hidden">
                 <img 
                   src={product.imageUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
                   alt={product.title} 
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-                <div className="absolute top-4 right-4 bg-brand-900/80 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-bold uppercase tracking-widest">
+                <div className="absolute top-4 right-4 bg-brand-900/80 backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-widest">
                   {product.internalCode}
+                </div>
+                <div className="absolute top-4 left-4">
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${product.condition === 'Nuovo' ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'}`}>
+                    {product.condition}
+                  </span>
                 </div>
                 <div className="absolute bottom-4 left-4 flex gap-2">
                   <span className="bg-gold/90 backdrop-blur-sm text-white px-2 py-1 rounded text-[10px] font-bold uppercase">{product.category}</span>
                   <span className="bg-white/90 backdrop-blur-sm text-brand-900 px-2 py-1 rounded text-[10px] font-bold uppercase">{product.brand}</span>
                 </div>
-              </div>
+              </Link>
               <div className="p-8 flex-1 flex flex-col">
-                <h4 className="text-xl font-bold mb-2 group-hover:text-gold transition-colors">{product.title}</h4>
+                <Link to={`/prodotto/${product.id}`}>
+                  <h4 className="text-xl font-bold mb-2 group-hover:text-gold transition-colors">{product.title}</h4>
+                </Link>
                 <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed">
                   {product.description}
                 </p>

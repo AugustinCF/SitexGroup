@@ -37,7 +37,8 @@ export const LoginPage = () => {
         setError(data.message || 'Accesso negato');
       }
     } catch (err) {
-      setError('Errore di connessione al server');
+      console.error('Errore dettagliato:', err);
+      setError('Errore di connessione: verifica che il server Node sia attivo sulla porta 3000');
     }
   };
 
