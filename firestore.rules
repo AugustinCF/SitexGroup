@@ -14,12 +14,13 @@ service cloud.firestore {
     }
 
     function isValidProduct(data) {
-      return data.keys().hasAll(['title', 'description', 'internalCode', 'price', 'imageUrl', 'createdAt', 'updatedAt', 'creatorId']) &&
-             data.keys().size() == 8 &&
+      return data.keys().hasAll(['title', 'description', 'internalCode', 'price', 'imageUrl', 'category', 'brand', 'createdAt', 'updatedAt', 'creatorId']) &&
+             data.keys().size() == 10 &&
              data.title is string && data.title.size() <= 200 &&
              data.description is string && data.description.size() <= 2000 &&
              data.internalCode is string && data.internalCode.size() <= 50 &&
              data.price is number && data.price >= 0 &&
+             data.category is string && data.brand is string &&
              data.imageUrl is string &&
              data.creatorId == request.auth.uid;
     }

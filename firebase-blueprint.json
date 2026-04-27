@@ -10,6 +10,8 @@
         "internalCode": { "type": "string", "description": "Codice interno aziendale" },
         "imageUrl": { "type": "string", "description": "URL dell'immagine del prodotto" },
         "price": { "type": "number", "description": "Prezzo del prodotto" },
+        "category": { "type": "string", "description": "Categoria del prodotto" },
+        "brand": { "type": "string", "description": "Marchio del prodotto" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },
         "creatorId": { "type": "string" }

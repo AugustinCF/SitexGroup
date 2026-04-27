@@ -22,6 +22,8 @@ export const CatalogPage = () => {
     description: '',
     internalCode: '',
     imageUrl: '',
+    category: '',
+    brand: '',
     price: 0
   });
 
@@ -56,7 +58,7 @@ export const CatalogPage = () => {
         imageUrl: formData.imageUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'
       });
       setIsAdding(false);
-      setFormData({ title: '', description: '', internalCode: '', imageUrl: '', price: 0 });
+      setFormData({ title: '', description: '', internalCode: '', imageUrl: '', category: '', brand: '', price: 0 });
     } catch (error) {
       console.error('Errore durante l\'aggiunta:', error);
       alert('Errore: ' + (error as Error).message);
@@ -85,30 +87,24 @@ export const CatalogPage = () => {
               Catalogo Prodotti
             </motion.h1>
             <p className="text-xl text-slate-400 max-w-2xl">
-              Gestione inventario e soluzioni tecniche TPC Group.
+              Esplora i nostri marchi e macchinari professionali.
             </p>
           </div>
           
           <div className="flex gap-4">
-            {!user ? (
-              <button 
-                onClick={signInWithGoogle}
-                className="flex items-center gap-2 px-6 py-3 bg-white text-brand-900 font-bold rounded-lg hover:bg-slate-100 transition-all"
-              >
-                <LogIn size={20} /> Login Operatore
-              </button>
-            ) : (
+            {user && (
               <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-slate-300">Ciao, {user.displayName}</span>
+                <span className="text-sm font-bold text-slate-300">Admin: {user.displayName}</span>
                 <button 
                   onClick={logout}
                   className="p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-all"
+                  title="Logout"
                 >
                   <LogOut size={20} />
                 </button>
                 <button 
                   onClick={() => setIsAdding(!isAdding)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gold text-white font-bold rounded-lg hover:brightness-110 transition-all"
+                  className="flex items-center gap-2 px-6 py-3 bg-gold text-white font-bold rounded-lg hover:brightness-110 transition-all shadow-lg shadow-gold/20"
                 >
                   <Plus size={20} /> Aggiungi Prodotto
                 </button>
@@ -141,6 +137,22 @@ export const CatalogPage = () => {
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
                   value={formData.internalCode}
                   onChange={e => setFormData({...formData, internalCode: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <input 
+                  placeholder="Categoria (es. Saldatura)"
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
+                  value={formData.category}
+                  onChange={e => setFormData({...formData, category: e.target.value})}
+                />
+                <input 
+                  placeholder="Marchio (es. Fronius)"
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
+                  value={formData.brand}
+                  onChange={e => setFormData({...formData, brand: e.target.value})}
                 />
               </div>
               <textarea 
@@ -190,7 +202,7 @@ export const CatalogPage = () => {
             <motion.div 
               key={product.id}
               layout
-              className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 group hover:shadow-xl transition-all"
+              className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 group hover:shadow-xl transition-all flex flex-col"
             >
               <div className="h-56 relative bg-slate-100 overflow-hidden">
                 <img 
@@ -201,13 +213,17 @@ export const CatalogPage = () => {
                 <div className="absolute top-4 right-4 bg-brand-900/80 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-bold uppercase tracking-widest">
                   {product.internalCode}
                 </div>
+                <div className="absolute bottom-4 left-4 flex gap-2">
+                  <span className="bg-gold/90 backdrop-blur-sm text-white px-2 py-1 rounded text-[10px] font-bold uppercase">{product.category}</span>
+                  <span className="bg-white/90 backdrop-blur-sm text-brand-900 px-2 py-1 rounded text-[10px] font-bold uppercase">{product.brand}</span>
+                </div>
               </div>
-              <div className="p-8">
+              <div className="p-8 flex-1 flex flex-col">
                 <h4 className="text-xl font-bold mb-2 group-hover:text-gold transition-colors">{product.title}</h4>
                 <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed">
                   {product.description}
                 </p>
-                <div className="flex justify-between items-center pt-6 border-t border-slate-100">
+                <div className="mt-auto flex justify-between items-center pt-6 border-t border-slate-100">
                   <div className="flex items-center gap-2 text-gold font-bold text-xl font-display">
                     <Euro size={18} />
                     {product.price.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
@@ -234,6 +250,8 @@ export const CatalogPage = () => {
           </div>
         )}
       </section>
+
+      {/* Login footer removed in favor of dedicated /accedi-al-catalogo route */}
     </div>
   );
 };
