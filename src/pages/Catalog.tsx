@@ -74,9 +74,13 @@ export const CatalogPage = () => {
         setFormData({ title: '', description: '', internalCode: '', category: '', brand: '', condition: 'Nuovo', price: 0 });
         setSelectedFiles(null);
         fetchProducts();
+      } else {
+        const errorData = await response.json();
+        alert(`Errore: ${errorData.error || 'Invio fallito'}`);
       }
     } catch (error) {
       console.error('Errore durante l\'aggiunta:', error);
+      alert('Errore di connessione al server');
     }
   };
 

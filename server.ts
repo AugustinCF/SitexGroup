@@ -76,6 +76,7 @@ async function startServer() {
   app.set('trust proxy', 1);
 
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
   app.use('/uploads', express.static(uploadDir));
   app.use(session({
     secret: 'tpc-group-secret-key',
@@ -151,26 +152,29 @@ async function startServer() {
     try {
       console.log('--- Richiesta Creazione Prodotto ---');
       console.log('Headers:', req.headers['content-type']);
-      console.log('Body:', JSON.stringify(req.body));
-      console.log('Files:', req.files ? (req.files as any).length : 0);
-
-      const title = req.body.title;
-      const description = req.body.description || '';
-      const internalCode = req.body.internalCode || '';
-      const category = req.body.category || '';
-      const brand = req.body.brand || '';
-      const price = parseFloat(req.body.price) || 0;
-      const condition = req.body.condition || 'Nuovo';
+      console.log('Body raw:', req.body);
       
-      if (!title || title.trim() === '') {
-        console.error('Titolo mancante o vuoto');
+      // Con multer, req.body dovrebbe essere popolato
+      const title = req.body.title ? String(req.body.title).trim() : null;
+      const description = req.body.description ? String(req.body.description).trim() : '';
+      const internalCode = req.body.internalCode ? String(req.body.internalCode).trim() : '';
+      const category = req.body.category ? String(req.body.category).trim() : '';
+      const brand = req.body.brand ? String(req.body.brand).trim() : '';
+      const price = parseFloat(req.body.price) || 0;
+      const condition = req.body.condition ? String(req.body.condition).trim() : 'Nuovo';
+      
+      if (!title) {
+        console.error('ERRORE: Titolo mancante in req.body');
         return res.status(400).json({ error: 'Il titolo è obbligatorio' });
       }
 
+      console.log('Dati validati:', { title, internalCode, category, brand, price, condition });
+
       const files = req.files as Express.Multer.File[];
+      console.log('Numero file caricati:', files ? files.length : 0);
       
       const info = db.prepare('INSERT INTO products (title, description, internalCode, category, brand, price, condition) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-        title.trim(), 
+        title, 
         description, 
         internalCode, 
         category, 
@@ -180,21 +184,21 @@ async function startServer() {
       );
       
       const productId = info.lastInsertRowid;
-      console.log('Prodotto creato con ID:', productId);
+      console.log('Prodotto creato con successo. ID:', productId);
       
       if (files && files.length > 0) {
         const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
         for (const file of files) {
           const imgUrl = `/uploads/${file.filename}`;
           insertImg.run(productId, imgUrl);
-          console.log('Immagine salvata:', imgUrl);
+          console.log('Immagine associata:', imgUrl);
         }
       }
       
-      res.json({ id: productId });
+      res.json({ id: productId, success: true });
     } catch (error: any) {
-      console.error('SERVER ERROR (POST /api/products):', error);
-      res.status(500).json({ error: error.message });
+      console.error('SERVER FATAL ERROR (POST /api/products):', error);
+      res.status(500).json({ error: error.message, stack: error.stack });
     }
   });
 
