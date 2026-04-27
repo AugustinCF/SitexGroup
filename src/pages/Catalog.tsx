@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  addDoc, 
-  onSnapshot, 
-  query, 
-  orderBy, 
-  serverTimestamp,
-  deleteDoc,
-  doc
-} from 'firebase/firestore';
-import { db, auth, signInWithGoogle, logout } from '../lib/firebase';
 import { motion } from 'motion/react';
 import { Plus, Trash2, LogIn, LogOut, Package, Euro } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 export const CatalogPage = () => {
   const [products, setProducts] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -27,57 +18,79 @@ export const CatalogPage = () => {
     price: 0
   });
 
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error('Errore nel caricamento prodotti:', error);
+    }
+  };
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/check-auth');
+      const data = await response.json();
+      setIsAdmin(data.isAdmin);
+    } catch (error) {
+      console.error('Errore nel controllo auth:', error);
+    }
+  };
+
   useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      setUser(user);
-    });
-
-    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
-    const unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
-      const prods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProducts(prods);
-    });
-
-    return () => {
-      unsubscribeAuth();
-      unsubscribeSnapshot();
-    };
+    fetchProducts();
+    checkAuth();
   }, []);
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!isAdmin) return;
 
     try {
-      await addDoc(collection(db, 'products'), {
-        ...formData,
-        price: Number(formData.price),
-        creatorId: user.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        imageUrl: formData.imageUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          imageUrl: formData.imageUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'
+        })
       });
-      setIsAdding(false);
-      setFormData({ title: '', description: '', internalCode: '', imageUrl: '', category: '', brand: '', price: 0 });
+
+      if (response.ok) {
+        setIsAdding(false);
+        setFormData({ title: '', description: '', internalCode: '', imageUrl: '', category: '', brand: '', price: 0 });
+        fetchProducts();
+      }
     } catch (error) {
       console.error('Errore durante l\'aggiunta:', error);
-      alert('Errore: ' + (error as Error).message);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Eliminare questo prodotto?')) return;
     try {
-      await deleteDoc(doc(db, 'products', id));
+      const response = await fetch(`/api/products/${id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        fetchProducts();
+      }
     } catch (error) {
       console.error('Errore durante l\'eliminazione:', error);
     }
   };
 
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    setIsAdmin(false);
+    navigate('/');
+  };
+
   return (
     <div className="pt-24 min-h-screen bg-slate-50">
       <section className="py-20 bg-brand-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-end">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center md:items-end gap-6">
           <div>
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
@@ -92,11 +105,11 @@ export const CatalogPage = () => {
           </div>
           
           <div className="flex gap-4">
-            {user && (
+            {isAdmin && (
               <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-slate-300">Admin: {user.displayName}</span>
+                <span className="text-sm font-bold text-slate-300">Area Admin Attiva</span>
                 <button 
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-all"
                   title="Logout"
                 >
@@ -114,7 +127,7 @@ export const CatalogPage = () => {
         </div>
       </section>
 
-      {isAdding && user && (
+      {isAdding && isAdmin && (
         <section className="py-12 max-w-3xl mx-auto px-4">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -226,10 +239,10 @@ export const CatalogPage = () => {
                 <div className="mt-auto flex justify-between items-center pt-6 border-t border-slate-100">
                   <div className="flex items-center gap-2 text-gold font-bold text-xl font-display">
                     <Euro size={18} />
-                    {product.price.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                    {Number(product.price).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                   </div>
                   
-                  {user && user.uid === product.creatorId && (
+                  {isAdmin && (
                     <button 
                       onClick={() => handleDelete(product.id)}
                       className="p-2 text-slate-300 hover:text-red-500 transition-colors"
