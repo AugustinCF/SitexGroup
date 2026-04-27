@@ -142,11 +142,26 @@ async function startServer() {
     if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
     
     try {
+      console.log('Ricevuta richiesta creazione prodotto');
+      console.log('Body:', req.body);
+      console.log('Files:', req.files);
+
       const { title, description, internalCode, category, brand, price, condition } = req.body;
+      
+      if (!title) {
+        return res.status(400).json({ error: 'Il titolo è obbligatorio' });
+      }
+
       const files = req.files as Express.Multer.File[];
       
       const info = db.prepare('INSERT INTO products (title, description, internalCode, category, brand, price, condition) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-        title, description, internalCode, category, brand, Number(price), condition
+        title, 
+        description || '', 
+        internalCode || '', 
+        category || '', 
+        brand || '', 
+        Number(price) || 0, 
+        condition || 'Nuovo'
       );
       
       const productId = info.lastInsertRowid;
