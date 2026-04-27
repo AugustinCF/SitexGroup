@@ -5,8 +5,13 @@ import { Link, useNavigate } from 'react-router-dom';
 
 export const CatalogPage = () => {
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [isManagingLists, setIsManagingLists] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newBrandName, setNewBrandName] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -29,6 +34,19 @@ export const CatalogPage = () => {
     }
   };
 
+  const fetchLists = async () => {
+    try {
+      const [catRes, brandRes] = await Promise.all([
+        fetch('/api/categories'),
+        fetch('/api/brands')
+      ]);
+      setCategories(await catRes.json());
+      setBrands(await brandRes.json());
+    } catch (error) {
+      console.error('Errore nel caricamento liste:', error);
+    }
+  };
+
   const checkAuth = async () => {
     try {
       const response = await fetch('/api/check-auth');
@@ -41,8 +59,34 @@ export const CatalogPage = () => {
 
   useEffect(() => {
     fetchProducts();
+    fetchLists();
     checkAuth();
   }, []);
+
+  const handleManageList = async (type: 'categories' | 'brands', action: 'add' | 'delete', value?: any) => {
+    if (!isAdmin) return;
+    try {
+      if (action === 'add') {
+        const name = type === 'categories' ? newCategoryName : newBrandName;
+        if (!name) return;
+        const res = await fetch(`/api/${type}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        if (res.ok) {
+          if (type === 'categories') setNewCategoryName('');
+          else setNewBrandName('');
+          fetchLists();
+        }
+      } else {
+        const res = await fetch(`/api/${type}/${value}`, { method: 'DELETE' });
+        if (res.ok) fetchLists();
+      }
+    } catch (error) {
+      console.error(`Errore gestione ${type}:`, error);
+    }
+  };
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +170,13 @@ export const CatalogPage = () => {
               <div className="flex items-center gap-4">
                 <span className="text-sm font-bold text-slate-300">Area Admin Attiva</span>
                 <button 
+                  onClick={() => setIsManagingLists(!isManagingLists)}
+                  className={`p-3 rounded-lg transition-all ${isManagingLists ? 'bg-gold text-white' : 'bg-white/10 hover:bg-white/20'}`}
+                  title="Gestione Categorie e Marchi"
+                >
+                  <Package size={20} />
+                </button>
+                <button 
                   onClick={handleLogout}
                   className="p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-all"
                   title="Logout"
@@ -143,6 +194,76 @@ export const CatalogPage = () => {
           </div>
         </div>
       </section>
+
+      {isManagingLists && isAdmin && (
+        <section className="py-12 max-w-4xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Gestione Categorie */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <h3 className="text-xl font-bold mb-4 italic">Gestione Categorie</h3>
+              <div className="flex gap-2 mb-4">
+                <input 
+                  placeholder="Nuova Categoria"
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-gold"
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                />
+                <button 
+                  onClick={() => handleManageList('categories', 'add')}
+                  className="p-2 bg-brand-900 text-white rounded-lg hover:bg-brand-800"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                {categories.map(cat => (
+                  <div key={cat.id} className="flex justify-between items-center p-2 bg-slate-50 rounded-lg group">
+                    <span className="text-sm font-medium">{cat.name}</span>
+                    <button 
+                      onClick={() => handleManageList('categories', 'delete', cat.id)}
+                      className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Gestione Marchi */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <h3 className="text-xl font-bold mb-4 italic">Gestione Marchi</h3>
+              <div className="flex gap-2 mb-4">
+                <input 
+                  placeholder="Nuovo Marchio"
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-gold"
+                  value={newBrandName}
+                  onChange={e => setNewBrandName(e.target.value)}
+                />
+                <button 
+                  onClick={() => handleManageList('brands', 'add')}
+                  className="p-2 bg-brand-900 text-white rounded-lg hover:bg-brand-800"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                {brands.map(brand => (
+                  <div key={brand.id} className="flex justify-between items-center p-2 bg-slate-50 rounded-lg group">
+                    <span className="text-sm font-medium">{brand.name}</span>
+                    <button 
+                      onClick={() => handleManageList('brands', 'delete', brand.id)}
+                      className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {isAdding && isAdmin && (
         <section className="py-12 max-w-3xl mx-auto px-4">
@@ -170,20 +291,28 @@ export const CatalogPage = () => {
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <input 
-                  placeholder="Categoria (es. Saldatura)"
+                <select 
                   required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold text-slate-500"
                   value={formData.category}
                   onChange={e => setFormData({...formData, category: e.target.value})}
-                />
-                <input 
-                  placeholder="Marchio (es. Fronius)"
+                >
+                  <option value="">Seleziona Categoria</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+                <select 
                   required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold text-slate-500"
                   value={formData.brand}
                   onChange={e => setFormData({...formData, brand: e.target.value})}
-                />
+                >
+                  <option value="">Seleziona Marchio</option>
+                  {brands.map(brand => (
+                    <option key={brand.id} value={brand.name}>{brand.name}</option>
+                  ))}
+                </select>
               </div>
               <textarea 
                 placeholder="Descrizione"

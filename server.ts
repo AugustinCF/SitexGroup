@@ -48,20 +48,35 @@ db.exec(`
     imageUrl TEXT NOT NULL,
     FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
+  );
+
+  CREATE TABLE IF NOT EXISTS brands (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
+  );
 `);
 
-// Migrazione veloce se mancano colonne
+// Migrazione veloce se mancano colonne o inserimento dati iniziali
 try {
   const columns = db.prepare("PRAGMA table_info(products)").all();
   const columnNames = columns.map((cl: any) => cl.name);
-  console.log('Colonne Tabella Prodotti:', columnNames);
   
   if (!columnNames.includes('condition')) {
-    console.log('Aggiunta colonna condition...');
     db.exec(`ALTER TABLE products ADD COLUMN condition TEXT DEFAULT 'Nuovo'`);
   }
+
+  // Aggiungi alcune categorie di esempio se vuote
+  const catCount = db.prepare('SELECT COUNT(*) as count FROM categories').get() as any;
+  if (catCount.count === 0) {
+    const insertCat = db.prepare('INSERT INTO categories (name) VALUES (?)');
+    ['Cottura', 'Refrigerazione', 'Lavaggio', 'Preparazione', 'Arredamento'].forEach(c => insertCat.run(c));
+  }
 } catch (e) {
-  console.error('Errore durante migrazione:', e);
+  console.error('Errore durante migrazione/setup:', e);
 }
 
 async function startServer() {
@@ -112,6 +127,53 @@ async function startServer() {
   });
 
   // --- API PRODOTTI ---
+  // ... (nel mezzo del file, dopo le rotte dei prodotti)
+
+  // --- API CATEGORIE ---
+  app.get('/api/categories', (req, res) => {
+    const categories = db.prepare('SELECT * FROM categories ORDER BY name ASC').all();
+    res.json(categories);
+  });
+
+  app.post('/api/categories', (req, res) => {
+    if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
+    try {
+      const { name } = req.body;
+      const info = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name);
+      res.json({ id: info.lastInsertRowid });
+    } catch (error: any) {
+      res.status(400).json({ error: 'Categoria già esistente o nome non valido' });
+    }
+  });
+
+  app.delete('/api/categories/:id', (req, res) => {
+    if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
+    db.prepare('DELETE FROM categories WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  });
+
+  // --- API MARCHI ---
+  app.get('/api/brands', (req, res) => {
+    const brands = db.prepare('SELECT * FROM brands ORDER BY name ASC').all();
+    res.json(brands);
+  });
+
+  app.post('/api/brands', (req, res) => {
+    if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
+    try {
+      const { name } = req.body;
+      const info = db.prepare('INSERT INTO brands (name) VALUES (?)').run(name);
+      res.json({ id: info.lastInsertRowid });
+    } catch (error: any) {
+      res.status(400).json({ error: 'Marchio già esistente o nome non valido' });
+    }
+  });
+
+  app.delete('/api/brands/:id', (req, res) => {
+    if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
+    db.prepare('DELETE FROM brands WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  });
 
   app.get('/api/products', (req, res) => {
     try {
