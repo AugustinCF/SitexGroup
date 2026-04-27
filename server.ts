@@ -52,9 +52,16 @@ db.exec(`
 
 // Migrazione veloce se mancano colonne
 try {
-  db.exec(`ALTER TABLE products ADD COLUMN condition TEXT DEFAULT 'Nuovo'`);
+  const columns = db.prepare("PRAGMA table_info(products)").all();
+  const columnNames = columns.map((cl: any) => cl.name);
+  console.log('Colonne Tabella Prodotti:', columnNames);
+  
+  if (!columnNames.includes('condition')) {
+    console.log('Aggiunta colonna condition...');
+    db.exec(`ALTER TABLE products ADD COLUMN condition TEXT DEFAULT 'Nuovo'`);
+  }
 } catch (e) {
-  // Colonna già esistente
+  console.error('Errore durante migrazione:', e);
 }
 
 async function startServer() {
@@ -142,40 +149,51 @@ async function startServer() {
     if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
     
     try {
-      console.log('Ricevuta richiesta creazione prodotto');
-      console.log('Body:', req.body);
-      console.log('Files:', req.files);
+      console.log('--- Richiesta Creazione Prodotto ---');
+      console.log('Headers:', req.headers['content-type']);
+      console.log('Body:', JSON.stringify(req.body));
+      console.log('Files:', req.files ? (req.files as any).length : 0);
 
-      const { title, description, internalCode, category, brand, price, condition } = req.body;
+      const title = req.body.title;
+      const description = req.body.description || '';
+      const internalCode = req.body.internalCode || '';
+      const category = req.body.category || '';
+      const brand = req.body.brand || '';
+      const price = parseFloat(req.body.price) || 0;
+      const condition = req.body.condition || 'Nuovo';
       
-      if (!title) {
+      if (!title || title.trim() === '') {
+        console.error('Titolo mancante o vuoto');
         return res.status(400).json({ error: 'Il titolo è obbligatorio' });
       }
 
       const files = req.files as Express.Multer.File[];
       
       const info = db.prepare('INSERT INTO products (title, description, internalCode, category, brand, price, condition) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-        title, 
-        description || '', 
-        internalCode || '', 
-        category || '', 
-        brand || '', 
-        Number(price) || 0, 
-        condition || 'Nuovo'
+        title.trim(), 
+        description, 
+        internalCode, 
+        category, 
+        brand, 
+        price, 
+        condition
       );
       
       const productId = info.lastInsertRowid;
+      console.log('Prodotto creato con ID:', productId);
       
       if (files && files.length > 0) {
         const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
         for (const file of files) {
-          insertImg.run(productId, `/uploads/${file.filename}`);
+          const imgUrl = `/uploads/${file.filename}`;
+          insertImg.run(productId, imgUrl);
+          console.log('Immagine salvata:', imgUrl);
         }
       }
       
       res.json({ id: productId });
     } catch (error: any) {
-      console.error('Error creating product:', error);
+      console.error('SERVER ERROR (POST /api/products):', error);
       res.status(500).json({ error: error.message });
     }
   });
