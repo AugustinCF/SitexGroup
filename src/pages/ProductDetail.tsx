@@ -10,9 +10,9 @@ export const ProductDetailPage = () => {
   const [mainImage, setMainImage] = useState<string>('');
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const loadProduct = async () => {
       try {
-        const response = await fetch(`/api/products/${id}`);
+        const response = await window.fetch(`/api/products/${id}`);
         const data = await response.json();
         setProduct(data);
         if (data.images && data.images.length > 0) {
@@ -26,7 +26,7 @@ export const ProductDetailPage = () => {
         setLoading(false);
       }
     };
-    fetchProduct();
+    loadProduct();
   }, [id]);
 
   if (loading) {

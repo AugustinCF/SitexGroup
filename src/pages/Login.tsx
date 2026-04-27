@@ -9,14 +9,14 @@ export const LoginPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const response = await fetch('/api/check-auth');
+    const verifyAuth = async () => {
+      const response = await window.fetch('/api/check-auth');
       const data = await response.json();
       if (data.isAdmin) {
         navigate('/catalogo');
       }
     };
-    checkAuth();
+    verifyAuth();
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -24,7 +24,7 @@ export const LoginPage = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/login', {
+      const response = await window.fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),

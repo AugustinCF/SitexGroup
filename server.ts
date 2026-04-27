@@ -298,7 +298,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`Server attivo su http://localhost:${PORT}`);
   });
 }

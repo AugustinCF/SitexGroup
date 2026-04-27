@@ -24,9 +24,9 @@ export const CatalogPage = () => {
     price: 0
   });
 
-  const fetchProducts = async () => {
+  const loadProducts = async () => {
     try {
-      const response = await fetch('/api/products');
+      const response = await window.fetch('/api/products');
       const data = await response.json();
       setProducts(data);
     } catch (error) {
@@ -34,11 +34,11 @@ export const CatalogPage = () => {
     }
   };
 
-  const fetchLists = async () => {
+  const loadLists = async () => {
     try {
       const [catRes, brandRes] = await Promise.all([
-        fetch('/api/categories'),
-        fetch('/api/brands')
+        window.fetch('/api/categories'),
+        window.fetch('/api/brands')
       ]);
       setCategories(await catRes.json());
       setBrands(await brandRes.json());
@@ -47,9 +47,9 @@ export const CatalogPage = () => {
     }
   };
 
-  const checkAuth = async () => {
+  const verifyAuth = async () => {
     try {
-      const response = await fetch('/api/check-auth');
+      const response = await window.fetch('/api/check-auth');
       const data = await response.json();
       setIsAdmin(data.isAdmin);
     } catch (error) {
@@ -58,9 +58,9 @@ export const CatalogPage = () => {
   };
 
   useEffect(() => {
-    fetchProducts();
-    fetchLists();
-    checkAuth();
+    loadProducts();
+    loadLists();
+    verifyAuth();
   }, []);
 
   const handleManageList = async (type: 'categories' | 'brands', action: 'add' | 'delete', value?: any) => {
@@ -69,7 +69,7 @@ export const CatalogPage = () => {
       if (action === 'add') {
         const name = type === 'categories' ? newCategoryName : newBrandName;
         if (!name) return;
-        const res = await fetch(`/api/${type}`, {
+        const res = await window.fetch(`/api/${type}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name })
@@ -77,11 +77,11 @@ export const CatalogPage = () => {
         if (res.ok) {
           if (type === 'categories') setNewCategoryName('');
           else setNewBrandName('');
-          fetchLists();
+          loadLists();
         }
       } else {
-        const res = await fetch(`/api/${type}/${value}`, { method: 'DELETE' });
-        if (res.ok) fetchLists();
+        const res = await window.fetch(`/api/${type}/${value}`, { method: 'DELETE' });
+        if (res.ok) loadLists();
       }
     } catch (error) {
       console.error(`Errore gestione ${type}:`, error);
@@ -108,7 +108,7 @@ export const CatalogPage = () => {
     }
 
     try {
-      const response = await fetch('/api/products', {
+      const response = await window.fetch('/api/products', {
         method: 'POST',
         body: data
       });
@@ -117,7 +117,7 @@ export const CatalogPage = () => {
         setIsAdding(false);
         setFormData({ title: '', description: '', internalCode: '', category: '', brand: '', condition: 'Nuovo', price: 0 });
         setSelectedFiles(null);
-        fetchProducts();
+        loadProducts();
       } else {
         const errorData = await response.json();
         alert(`Errore: ${errorData.error || 'Invio fallito'}`);
@@ -131,11 +131,11 @@ export const CatalogPage = () => {
   const handleDelete = async (id: number) => {
     if (!window.confirm('Eliminare questo prodotto?')) return;
     try {
-      const response = await fetch(`/api/products/${id}`, {
+      const response = await window.fetch(`/api/products/${id}`, {
         method: 'DELETE'
       });
       if (response.ok) {
-        fetchProducts();
+        loadProducts();
       }
     } catch (error) {
       console.error('Errore durante l\'eliminazione:', error);
@@ -143,7 +143,7 @@ export const CatalogPage = () => {
   };
 
   const handleLogout = async () => {
-    await fetch('/api/logout', { method: 'POST' });
+    await window.fetch('/api/logout', { method: 'POST' });
     setIsAdmin(false);
     navigate('/');
   };
