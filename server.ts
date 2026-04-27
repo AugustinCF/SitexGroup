@@ -106,49 +106,63 @@ async function startServer() {
   // --- API PRODOTTI ---
 
   app.get('/api/products', (req, res) => {
-    const products = db.prepare('SELECT * FROM products ORDER BY createdAt DESC').all();
-    const productsWithImages = products.map((p: any) => {
-      const images = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(p.id);
-      return { 
-        ...p, 
-        images: images.map((img: any) => img.imageUrl),
-        imageUrl: images.length > 0 ? images[0].imageUrl : null
-      };
-    });
-    res.json(productsWithImages);
+    try {
+      const products = db.prepare('SELECT * FROM products ORDER BY createdAt DESC').all();
+      const productsWithImages = products.map((p: any) => {
+        const images = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(p.id);
+        return { 
+          ...p, 
+          images: images.map((img: any) => img.imageUrl),
+          imageUrl: images.length > 0 ? images[0].imageUrl : null
+        };
+      });
+      res.json(productsWithImages);
+    } catch (error: any) {
+      console.error('Error fetching products:', error);
+      res.status(500).json({ error: error.message });
+    }
   });
 
   app.get('/api/products/:id', (req, res) => {
-    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
-    if (!product) return res.status(404).json({ message: 'Prodotto non trovato' });
-    
-    const images = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(req.params.id);
-    res.json({
-      ...product,
-      images: images.map((img: any) => img.imageUrl)
-    });
+    try {
+      const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+      if (!product) return res.status(404).json({ message: 'Prodotto non trovato' });
+      
+      const images = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(req.params.id);
+      res.json({
+        ...product,
+        images: images.map((img: any) => img.imageUrl)
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   app.post('/api/products', upload.array('images', 10), (req, res) => {
     if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
     
-    const { title, description, internalCode, category, brand, price, condition } = req.body;
-    const files = req.files as Express.Multer.File[];
-    
-    const info = db.prepare('INSERT INTO products (title, description, internalCode, category, brand, price, condition) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-      title, description, internalCode, category, brand, price, condition
-    );
-    
-    const productId = info.lastInsertRowid;
-    
-    if (files && files.length > 0) {
-      const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
-      for (const file of files) {
-        insertImg.run(productId, `/uploads/${file.filename}`);
+    try {
+      const { title, description, internalCode, category, brand, price, condition } = req.body;
+      const files = req.files as Express.Multer.File[];
+      
+      const info = db.prepare('INSERT INTO products (title, description, internalCode, category, brand, price, condition) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+        title, description, internalCode, category, brand, Number(price), condition
+      );
+      
+      const productId = info.lastInsertRowid;
+      
+      if (files && files.length > 0) {
+        const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
+        for (const file of files) {
+          insertImg.run(productId, `/uploads/${file.filename}`);
+        }
       }
+      
+      res.json({ id: productId });
+    } catch (error: any) {
+      console.error('Error creating product:', error);
+      res.status(500).json({ error: error.message });
     }
-    
-    res.json({ id: productId });
   });
 
   app.delete('/api/products/:id', (req, res) => {
