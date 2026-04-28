@@ -530,12 +530,18 @@ async function startServer() {
             }
           }
         } else if (row.type === 'brand') {
-          const slug = row.slug || slugify(row.name_it, { lower: true });
+          const name = row.name_it || row.name || row.Name;
+          if (!name) {
+            console.log('Skipping brand import: name missing', row);
+            continue;
+          }
+          const slug = row.slug || slugify(name, { lower: true });
           let logoPath = '';
 
-          if (row.logoUrl) {
+          if (row.logoUrl || row.logo) {
+            const url = (row.logoUrl || row.logo).trim();
             try {
-              const imgRes = await axios.get(row.logoUrl.trim(), { responseType: 'arraybuffer' });
+              const imgRes = await axios.get(url, { responseType: 'arraybuffer' });
               const fileName = `${Date.now()}-brand-${Math.round(Math.random()*1000)}.jpg`;
               const destPath = path.join(uploadDirs.logos, fileName);
               await sharp(imgRes.data)
@@ -543,20 +549,34 @@ async function startServer() {
                 .toFile(destPath);
               logoPath = `/uploads/logos/${fileName}`;
             } catch (err) {
-              console.error('Errore download logo brand:', row.logoUrl);
+              console.error('Errore download logo brand:', url, err);
             }
           }
 
-          const stmt = db.prepare('INSERT OR IGNORE INTO brands (name_it, slug, description_it, website, logo) VALUES (?, ?, ?, ?, ?)');
-          const info = stmt.run(row.name_it, slug, row.description_it, row.website || '', logoPath);
-          if (info.changes > 0) importedCount++;
+          const description = row.description_it || row.description || row.Description || '';
+          const website = row.website || row.Website || '';
+
+          const stmt = db.prepare('INSERT OR IGNORE INTO brands (name_it, slug, description_it, website, logo, visibility) VALUES (?, ?, ?, ?, ?, 1)');
+          const info = stmt.run(name, slug, description, website, logoPath);
+          if (info.changes > 0) {
+            importedCount++;
+            console.log(`Brand imported: ${name} (slug: ${slug})`);
+          } else {
+            console.warn(`Brand skipped (likely duplicate slug or name): ${name} (slug: ${slug})`);
+          }
         } else if (row.type === 'category') {
-          const slug = row.slug || slugify(row.name_it, { lower: true });
+          const name = row.name_it || row.name || row.Name;
+          if (!name) {
+            console.log('Skipping category import: name missing', row);
+            continue;
+          }
+          const slug = row.slug || slugify(name, { lower: true });
           let imgPath = '';
 
-          if (row.imageUrl) {
+          if (row.imageUrl || row.image) {
+            const url = (row.imageUrl || row.image).trim();
             try {
-              const imgRes = await axios.get(row.imageUrl.trim(), { responseType: 'arraybuffer' });
+              const imgRes = await axios.get(url, { responseType: 'arraybuffer' });
               const fileName = `${Date.now()}-cat-${Math.round(Math.random()*1000)}.jpg`;
               const destPath = path.join(uploadDirs.categories, fileName);
               await sharp(imgRes.data).toFile(destPath);
