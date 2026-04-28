@@ -1,315 +1,212 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Trash2, LogIn, LogOut, Package, Euro } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Package, Euro, ChevronRight, Search, SlidersHorizontal, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useLanguage } from '../lib/LanguageContext';
 
 export const CatalogPage = () => {
   const [products, setProducts] = useState<any[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    internalCode: '',
-    category: '',
-    brand: '',
-    condition: 'Nuovo',
-    price: 0
-  });
+  const [categories, setCategories] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedBrand, setSelectedBrand] = useState<string>('all');
+  const { t } = useLanguage();
 
-  const fetchProducts = async () => {
+  const fetchAll = async () => {
     try {
-      const response = await fetch('/api/products');
-      const data = await response.json();
-      setProducts(data);
+      const [pRes, cRes, bRes] = await Promise.all([
+        fetch('/api/products'),
+        fetch('/api/categories'),
+        fetch('/api/brands')
+      ]);
+      
+      const pData = await pRes.json();
+      const cData = await cRes.json();
+      const bData = await bRes.json();
+      
+      setProducts(pData.filter((p: any) => p.visibility));
+      setCategories(cData);
+      setBrands(bData);
     } catch (error) {
-      console.error('Errore nel caricamento prodotti:', error);
-    }
-  };
-
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/check-auth');
-      const data = await response.json();
-      setIsAdmin(data.isAdmin);
-    } catch (error) {
-      console.error('Errore nel controllo auth:', error);
+      console.error('Errore nel caricamento dei dati:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProducts();
-    checkAuth();
+    fetchAll();
   }, []);
 
-  const handleAddProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isAdmin) return;
-
-    const data = new FormData();
-    data.append('title', formData.title);
-    data.append('description', formData.description);
-    data.append('internalCode', formData.internalCode);
-    data.append('category', formData.category);
-    data.append('brand', formData.brand);
-    data.append('condition', formData.condition);
-    data.append('price', formData.price.toString());
-
-    if (selectedFiles) {
-      for (let i = 0; i < selectedFiles.length; i++) {
-        data.append('images', selectedFiles[i]);
-      }
-    }
-
-    try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        body: data
-      });
-
-      if (response.ok) {
-        setIsAdding(false);
-        setFormData({ title: '', description: '', internalCode: '', category: '', brand: '', condition: 'Nuovo', price: 0 });
-        setSelectedFiles(null);
-        fetchProducts();
-      } else {
-        const errorData = await response.json();
-        alert(`Errore: ${errorData.error || 'Invio fallito'}`);
-      }
-    } catch (error) {
-      console.error('Errore durante l\'aggiunta:', error);
-      alert('Errore di connessione al server');
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Eliminare questo prodotto?')) return;
-    try {
-      const response = await fetch(`/api/products/${id}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        fetchProducts();
-      }
-    } catch (error) {
-      console.error('Errore durante l\'eliminazione:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    setIsAdmin(false);
-    navigate('/');
-  };
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = t(p, 'name').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || p.categoryId === parseInt(selectedCategory);
+    const matchesBrand = selectedBrand === 'all' || p.brandId === parseInt(selectedBrand);
+    return matchesSearch && matchesCategory && matchesBrand;
+  });
 
   return (
-    <div className="pt-24 min-h-screen bg-slate-50">
-      <section className="py-20 bg-brand-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center md:items-end gap-6">
-          <div>
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-5xl font-display font-bold mb-6 italic"
-            >
-              Catalogo Prodotti
-            </motion.h1>
-            <p className="text-xl text-slate-400 max-w-2xl">
-              Esplora i nostri marchi e macchinari professionali.
+    <div className="pt-24 min-h-screen bg-slate-50 pb-20">
+      {/* Header Section */}
+      <section className="py-24 bg-brand-900 overflow-hidden relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center md:text-left">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-6 italic">
+              Catalogo <span className="text-gold">Tecnico</span>
+            </h1>
+            <p className="text-xl text-slate-400 max-w-2xl leading-relaxed">
+              La nostra selezione di macchinari e materiali di consumo per l'industria metalmeccanica e l'automazione.
             </p>
-          </div>
-          
-          <div className="flex gap-4">
-            {isAdmin && (
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-slate-300">Area Admin Attiva</span>
-                <button 
-                  onClick={handleLogout}
-                  className="p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-all"
-                  title="Logout"
-                >
-                  <LogOut size={20} />
-                </button>
-                <button 
-                  onClick={() => setIsAdding(!isAdding)}
-                  className="flex items-center gap-2 px-6 py-3 bg-gold text-white font-bold rounded-lg hover:brightness-110 transition-all shadow-lg shadow-gold/20"
-                >
-                  <Plus size={20} /> Aggiungi Prodotto
-                </button>
-              </div>
-            )}
+          </motion.div>
+        </div>
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-gold/5 rounded-full blur-3xl" />
+      </section>
+
+      {/* Filters & Search */}
+      <section className="sticky top-20 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row gap-6 items-center">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <input 
+                type="text" 
+                placeholder="Cerca macchinario, marca o componente..."
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-gold/20 focus:border-gold outline-none transition-all"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex flex-wrap gap-4 w-full lg:w-auto">
+              <select 
+                className="flex-1 lg:w-48 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-gold transition-colors text-sm font-bold"
+                value={selectedCategory}
+                onChange={e => setSelectedCategory(e.target.value)}
+              >
+                <option value="all">Tutte le Categorie</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name_it}</option>)}
+              </select>
+              
+              <select 
+                className="flex-1 lg:w-48 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-gold transition-colors text-sm font-bold"
+                value={selectedBrand}
+                onChange={e => setSelectedBrand(e.target.value)}
+              >
+                <option value="all">Tutti i Marchi</option>
+                {brands.map(b => <option key={b.id} value={b.id}>{b.name_it}</option>)}
+              </select>
+            </div>
           </div>
         </div>
       </section>
 
-      {isAdding && isAdmin && (
-        <section className="py-12 max-w-3xl mx-auto px-4">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200"
-          >
-            <h3 className="text-2xl font-bold mb-6 italic">Nuovo Prodotto</h3>
-            <form onSubmit={handleAddProduct} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <input 
-                  placeholder="Titolo Prodotto"
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
-                  value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                />
-                <input 
-                  placeholder="Codice Interno"
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
-                  value={formData.internalCode}
-                  onChange={e => setFormData({...formData, internalCode: e.target.value})}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <input 
-                  placeholder="Categoria (es. Saldatura)"
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
-                  value={formData.category}
-                  onChange={e => setFormData({...formData, category: e.target.value})}
-                />
-                <input 
-                  placeholder="Marchio (es. Fronius)"
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
-                  value={formData.brand}
-                  onChange={e => setFormData({...formData, brand: e.target.value})}
-                />
-              </div>
-              <textarea 
-                placeholder="Descrizione"
-                required
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 h-32 outline-none focus:border-gold"
-                value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value})}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <input 
-                  placeholder="Prezzo (€)"
-                  type="number"
-                  step="0.01"
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 outline-none focus:border-gold"
-                  value={formData.price}
-                  onChange={e => setFormData({...formData, price: Number(e.target.value)})}
-                />
-                <div className="flex bg-slate-50 border border-slate-200 rounded-lg p-1">
-                  <button 
-                    type="button"
-                    onClick={() => setFormData({...formData, condition: 'Nuovo'})}
-                    className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${formData.condition === 'Nuovo' ? 'bg-brand-900 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
-                  >
-                    Nuovo
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setFormData({...formData, condition: 'Usato'})}
-                    className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${formData.condition === 'Usato' ? 'bg-brand-900 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
-                  >
-                    Usato
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">Immagini Prodotto (max 10)</label>
-                <input 
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={e => setSelectedFiles(e.target.files)}
-                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gold/10 file:text-gold hover:file:bg-gold/20"
-                />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button type="submit" className="flex-1 py-4 bg-brand-900 text-white font-bold rounded-lg hover:bg-brand-800 transition-all">
-                  Salva Prodotto
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setIsAdding(false)}
-                  className="px-8 py-4 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200 transition-all"
-                >
-                  Annulla
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </section>
-      )}
-
-      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
-            <motion.div 
-              key={product.id}
-              layout
-              className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 group hover:shadow-xl transition-all flex flex-col"
-            >
-              <Link to={`/prodotto/${product.id}`} className="h-56 relative bg-slate-100 overflow-hidden">
-                <img 
-                  src={product.imageUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
-                  alt={product.title} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute top-4 right-4 bg-brand-900/80 backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-widest">
-                  {product.internalCode}
-                </div>
-                <div className="absolute top-4 left-4">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${product.condition === 'Nuovo' ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'}`}>
-                    {product.condition}
-                  </span>
-                </div>
-                <div className="absolute bottom-4 left-4 flex gap-2">
-                  <span className="bg-gold/90 backdrop-blur-sm text-white px-2 py-1 rounded text-[10px] font-bold uppercase">{product.category}</span>
-                  <span className="bg-white/90 backdrop-blur-sm text-brand-900 px-2 py-1 rounded text-[10px] font-bold uppercase">{product.brand}</span>
-                </div>
-              </Link>
-              <div className="p-8 flex-1 flex flex-col">
-                <Link to={`/prodotto/${product.id}`}>
-                  <h4 className="text-xl font-bold mb-2 group-hover:text-gold transition-colors">{product.title}</h4>
-                </Link>
-                <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed">
-                  {product.description}
-                </p>
-                <div className="mt-auto flex justify-between items-center pt-6 border-t border-slate-100">
-                  <div className="flex items-center gap-2 text-gold font-bold text-xl font-display">
-                    <Euro size={18} />
-                    {Number(product.price).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+      {/* Products Grid */}
+      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filteredProducts.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {filteredProducts.map((product, i) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-white rounded-[2rem] overflow-hidden border border-slate-200 shadow-sm hover:shadow-2xl transition-all group"
+              >
+                <Link to={`/prodotto/${product.id}`} className="block h-72 relative bg-slate-100 overflow-hidden">
+                  <img 
+                    src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
+                    alt={t(product, 'name')} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute top-6 left-6 flex flex-col gap-2">
+                    <span className="bg-white/95 backdrop-blur-sm px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-brand-900 shadow-sm border border-slate-100">
+                      {product.brandName}
+                    </span>
                   </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-brand-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+
+                <div className="p-8">
+                  <span className="text-gold font-bold text-[10px] uppercase tracking-[0.2em] mb-3 block">
+                    {product.categoryName}
+                  </span>
+                  <Link to={`/prodotto/${product.id}`}>
+                    <h3 className="text-2xl font-bold mb-4 italic group-hover:text-gold transition-colors line-clamp-1">
+                      {t(product, 'name')}
+                    </h3>
+                  </Link>
+                  <p className="text-slate-500 text-sm mb-8 line-clamp-2 font-medium leading-relaxed">
+                    {t(product, 'description')}
+                  </p>
                   
-                  {isAdmin && (
-                    <button 
-                      onClick={() => handleDelete(product.id)}
-                      className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                  <div className="flex justify-between items-center py-6 border-t border-slate-100">
+                    <div className="flex items-center gap-2 text-2xl font-display font-bold text-brand-900">
+                      <Euro size={20} className="text-gold" />
+                      {Number(product.price).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                    </div>
+                    <Link 
+                      to={`/prodotto/${product.id}`}
+                      className="flex items-center justify-center w-12 h-12 bg-slate-900 text-white rounded-full hover:bg-gold transition-all"
                     >
-                      <Trash2 size={20} />
-                    </button>
-                  )}
+                      <ChevronRight size={24} />
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-        
-        {products.length === 0 && (
-          <div className="py-20 text-center">
-            <Package size={64} className="mx-auto text-slate-200 mb-4" />
-            <p className="text-slate-400 font-medium">Nessun prodotto nel catalogo.</p>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-40 text-center">
+            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+              <Package size={40} />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-800 mb-2">Nessun prodotto trovato</h3>
+            <p className="text-slate-400">Prova a cambiare i filtri o i termini di ricerca.</p>
+            <button 
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedCategory('all');
+                setSelectedBrand('all');
+              }}
+              className="mt-8 text-gold font-bold underline underline-offset-8"
+            >
+              Resetta tutti i filtri
+            </button>
           </div>
         )}
       </section>
 
-      {/* Login footer removed in favor of dedicated /accedi-al-catalogo route */}
+      {/* CTA Section */}
+      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-gold rounded-[3rem] p-12 md:p-20 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12">
+          <div className="relative z-10 max-w-xl text-center md:text-left">
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6 italic">Supporto Tecnico <br/> Specializzato</h2>
+            <p className="text-lg opacity-90 font-medium leading-relaxed">
+              Hai bisogno di una consulenza tecnica per scegliere l'impianto giusto per la tua officina? I nostri ingegneri sono a tua disposizione.
+            </p>
+          </div>
+          <div className="relative z-10 flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+            <Link 
+              to="/contatti" 
+              className="px-10 py-5 bg-brand-900 text-white font-bold rounded-2xl flex items-center justify-center gap-3 hover:bg-brand-800 transition-all shadow-xl"
+            >
+              Contattaci <ArrowRight size={20} />
+            </Link>
+          </div>
+          
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-white/5 skew-x-12 translate-x-1/4" />
+        </div>
+      </section>
     </div>
   );
 };
+
