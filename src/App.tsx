@@ -60,9 +60,9 @@ const Navbar = () => {
     { name: 'Home', href: '/' },
     { name: 'Saldatura', href: '/saldatura' },
     { name: 'Compressori', href: '/compressori' },
+    { name: 'Marchi', href: '/marchi' },
     { name: 'Catalogo', href: '/catalogo' },
     { name: 'Assistenza', href: '/assistenza' },
-    { name: 'Marchi', href: '/marchi' },
   ];
 
   return (
@@ -487,6 +487,8 @@ export default function App() {
                     <li><Link to="/" className="hover:text-accent transition-colors">Home</Link></li>
                     <li><Link to="/saldatura" className="hover:text-accent transition-colors">Saldatura</Link></li>
                     <li><Link to="/compressori" className="hover:text-accent transition-colors">Compressori</Link></li>
+                    <li><Link to="/marchi" className="hover:text-accent transition-colors">Marchi</Link></li>
+                    <li><Link to="/catalogo" className="hover:text-accent transition-colors">Catalogo</Link></li>
                     <li><Link to="/assistenza" className="hover:text-accent transition-colors">Assistenza</Link></li>
                   </ul>
                 </div>
