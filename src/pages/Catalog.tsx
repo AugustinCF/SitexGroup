@@ -22,6 +22,10 @@ export const CatalogPage = () => {
         fetch('/api/brands')
       ]);
       
+      if (!pRes.ok) console.error('Products fetch failed:', pRes.status, pRes.statusText);
+      if (!cRes.ok) console.error('Categories fetch failed:', cRes.status, cRes.statusText);
+      if (!bRes.ok) console.error('Brands fetch failed:', bRes.status, bRes.statusText);
+
       const pData = await pRes.json();
       const cData = await cRes.json();
       const bData = await bRes.json();

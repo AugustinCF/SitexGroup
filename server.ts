@@ -147,8 +147,13 @@ async function startServer() {
 
   // --- BRANDS CRUD ---
   app.get('/api/brands', (req, res) => {
-    const brands = db.prepare('SELECT * FROM brands ORDER BY name_it ASC').all();
-    res.json(brands);
+    try {
+      const brands = db.prepare('SELECT * FROM brands ORDER BY name_it ASC').all();
+      res.json(brands);
+    } catch (e: any) {
+      console.error('Error fetching brands:', e);
+      res.status(500).json({ error: 'Database error', message: e.message });
+    }
   });
 
   app.post('/api/brands', isAdmin, upload.single('logo'), async (req, res) => {
@@ -252,8 +257,13 @@ async function startServer() {
 
   // --- CATEGORIES CRUD ---
   app.get('/api/categories', (req, res) => {
-    const cats = db.prepare('SELECT * FROM categories ORDER BY name_it ASC').all();
-    res.json(cats);
+    try {
+      const cats = db.prepare('SELECT * FROM categories ORDER BY name_it ASC').all();
+      res.json(cats);
+    } catch (e: any) {
+      console.error('Error fetching categories:', e);
+      res.status(500).json({ error: 'Database error', message: e.message });
+    }
   });
 
   app.post('/api/categories', isAdmin, upload.single('image'), async (req, res) => {
@@ -350,19 +360,24 @@ async function startServer() {
 
   // --- PRODUCTS CRUD ---
   app.get('/api/products', (req, res) => {
-    const products = db.prepare(`
-      SELECT p.*, b.name_it as brandName, c.name_it as categoryName 
-      FROM products p 
-      LEFT JOIN brands b ON p.brandId = b.id 
-      LEFT JOIN categories c ON p.categoryId = c.id
-      ORDER BY p.createdAt DESC
-    `).all();
-    
-    const results = products.map((p: any) => {
-      const images = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(p.id);
-      return { ...p, images: images.map((img: any) => img.imageUrl) };
-    });
-    res.json(results);
+    try {
+      const products = db.prepare(`
+        SELECT p.*, b.name_it as brandName, c.name_it as categoryName 
+        FROM products p 
+        LEFT JOIN brands b ON p.brandId = b.id 
+        LEFT JOIN categories c ON p.categoryId = c.id
+        ORDER BY p.createdAt DESC
+      `).all();
+      
+      const results = products.map((p: any) => {
+        const images = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(p.id);
+        return { ...p, images: images.map((img: any) => img.imageUrl) };
+      });
+      res.json(results);
+    } catch (e: any) {
+      console.error('Error fetching products:', e);
+      res.status(500).json({ error: 'Database error', message: e.message });
+    }
   });
 
   app.post('/api/products', isAdmin, upload.array('images', 10), async (req, res) => {
@@ -520,10 +535,17 @@ async function startServer() {
     }
   });
 
+  // Global API 404 handler
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API endpoint not found', path: req.originalUrl });
+  });
+
   // Global Error Handler
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('SERVER ERROR:', err);
-    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal Server Error', message: err.message });
+    }
   });
 
   // --- VITE MIDDLEWARE ---

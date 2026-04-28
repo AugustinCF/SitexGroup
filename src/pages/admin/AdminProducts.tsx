@@ -12,14 +12,28 @@ export const AdminProducts = () => {
   const [imageFiles, setImageFiles] = useState<FileList | null>(null);
 
   const fetchAll = async () => {
-    const [pRes, bRes, cRes] = await Promise.all([
-      fetch('/api/products'),
-      fetch('/api/brands'),
-      fetch('/api/categories')
-    ]);
-    setProducts(await pRes.json());
-    setBrands(await bRes.json());
-    setCategories(await cRes.json());
+    try {
+      const [pRes, bRes, cRes] = await Promise.all([
+        fetch('/api/products'),
+        fetch('/api/brands'),
+        fetch('/api/categories')
+      ]);
+      
+      if (!pRes.ok) console.error('Products fetch failed:', pRes.status, pRes.statusText);
+      if (!bRes.ok) console.error('Brands fetch failed:', bRes.status, bRes.statusText);
+      if (!cRes.ok) console.error('Categories fetch failed:', cRes.status, cRes.statusText);
+
+      const pData = await pRes.json();
+      const bData = await bRes.json();
+      const cData = await cRes.json();
+      
+      setProducts(pData);
+      setBrands(bData);
+      setCategories(cData);
+    } catch (error: any) {
+      console.error('Detailed fetch error:', error);
+      // Fallback or alert if needed
+    }
   };
 
   useEffect(() => {
