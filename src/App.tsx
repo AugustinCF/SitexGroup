@@ -490,6 +490,7 @@ export default function App() {
                     <li><Link to="/marchi" className="hover:text-accent transition-colors">Marchi</Link></li>
                     <li><Link to="/catalogo" className="hover:text-accent transition-colors">Catalogo</Link></li>
                     <li><Link to="/assistenza" className="hover:text-accent transition-colors">Assistenza</Link></li>
+                    <li><Link to="/admin" className="text-[10px] text-slate-700 hover:text-white mt-4 block">Area Admin</Link></li>
                   </ul>
                 </div>
                 <div className="space-y-4">

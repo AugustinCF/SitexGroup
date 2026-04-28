@@ -107,7 +107,7 @@ async function startServer() {
     resave: false,
     saveUninitialized: false,
     cookie: { 
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production' && !process.env.IS_LOCAL,
       maxAge: 24 * 60 * 60 * 1000 
     }
   }));
@@ -125,10 +125,13 @@ async function startServer() {
   app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    console.log(`Login attempt with password length: ${password?.length || 0}`);
     if (password === adminPassword) {
       (req.session as any).isAdmin = true;
+      console.log(`Login successful for SessionID=${req.sessionID}`);
       res.json({ success: true });
     } else {
+      console.log(`Login failed for SessionID=${req.sessionID}`);
       res.status(401).json({ success: false, message: 'Password errata' });
     }
   });
@@ -138,7 +141,9 @@ async function startServer() {
   });
 
   app.get('/api/check-auth', (req, res) => {
-    res.json({ isAdmin: !!(req.session as any).isAdmin });
+    const isAdmin = !!(req.session as any).isAdmin;
+    console.log(`Check Auth: isAdmin=${isAdmin}, SessionID=${req.sessionID}`);
+    res.json({ isAdmin });
   });
 
   // --- BRANDS CRUD ---

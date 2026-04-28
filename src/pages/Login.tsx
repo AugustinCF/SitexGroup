@@ -13,7 +13,7 @@ export const LoginPage = () => {
       const response = await fetch('/api/check-auth');
       const data = await response.json();
       if (data.isAdmin) {
-        navigate('/catalogo');
+        navigate('/admin');
       }
     };
     checkAuth();
@@ -24,21 +24,32 @@ export const LoginPage = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          const errorData = JSON.parse(errorText);
+          setError(errorData.message || `Errore server: ${response.status}`);
+        } catch (e) {
+          setError(`Errore server (${response.status}): risposta non valida.`);
+        }
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        navigate('/catalogo');
+        navigate('/admin');
       } else {
         setError(data.message || 'Accesso negato');
       }
     } catch (err) {
-      console.error('Errore dettagliato:', err);
-      setError('Errore di connessione: verifica che il server Node sia attivo sulla porta 3000');
+      console.error('Errore di rete o fetch:', err);
+      setError('Errore di connessione: il server sulla porta 3000 non risponde o è irraggiungibile.');
     }
   };
 

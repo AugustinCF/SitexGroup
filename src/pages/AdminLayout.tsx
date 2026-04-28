@@ -13,6 +13,7 @@ export const AdminLayout = () => {
         const res = await fetch('/api/check-auth');
         const data = await res.json();
         if (!data.isAdmin) {
+          console.log('User is not admin, redirecting to login...');
           navigate('/accedi-al-catalogo');
         } else {
           setIsAdmin(true);
