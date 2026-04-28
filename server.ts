@@ -98,6 +98,10 @@ async function startServer() {
   const PORT = parseInt(process.env.PORT || '3000', 10);
   
   app.set('trust proxy', 1);
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -516,6 +520,12 @@ async function startServer() {
     }
   });
 
+  // Global Error Handler
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('SERVER ERROR:', err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+  });
+
   // --- VITE MIDDLEWARE ---
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
@@ -526,6 +536,10 @@ async function startServer() {
   } else {
     const distPath = path.join(__dirname, 'dist');
     app.use(express.static(distPath));
+    // Explicitly return 404 for missing /api routes before the catch-all
+    app.use('/api', (req, res) => {
+      res.status(404).json({ error: 'Endpoint not found' });
+    });
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
