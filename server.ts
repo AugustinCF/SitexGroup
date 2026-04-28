@@ -484,7 +484,18 @@ async function startServer() {
     
     try {
       const fileContent = fs.readFileSync(req.file.path, 'utf-8');
-      const records: any[] = parse(fileContent, { columns: true, skip_empty_lines: true });
+      // Tentativo di rilevare il delimitatore guardando la prima riga
+      let delimiter = ',';
+      const firstLine = fileContent.split('\n')[0];
+      if (firstLine.includes(';')) delimiter = ';';
+      
+      const records: any[] = parse(fileContent, { 
+        columns: true, 
+        skip_empty_lines: true,
+        delimiter: delimiter,
+        trim: true,
+        bom: true // Supporta file Excel con BOM
+      });
       
       let importedCount = 0;
 
