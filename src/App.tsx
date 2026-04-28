@@ -31,18 +31,30 @@ import { BrandsPage } from './pages/Brands';
 import { CatalogPage } from './pages/Catalog';
 import { LoginPage } from './pages/Login';
 import { ProductDetailPage } from './pages/ProductDetail';
+import { AdminLayout } from './pages/AdminLayout';
+import { AdminBrands } from './pages/admin/AdminBrands';
+import { AdminCategories } from './pages/admin/AdminCategories';
+import { AdminProducts } from './pages/admin/AdminProducts';
+import { AdminImport } from './pages/admin/AdminImport';
+import { BrandDetailPage } from './pages/BrandDetail';
+import { CategoryDetailPage } from './pages/CategoryDetail';
+import { useLanguage } from './lib/LanguageContext';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { lang, setLang } = useLanguage();
   const location = useLocation();
   const isHome = location.pathname === '/';
+  const isAdminPath = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  if (isAdminPath) return null;
 
   const navLinks = [
     { name: 'Home', href: '/' },
@@ -68,18 +80,30 @@ const Navbar = () => {
             </Link>
           </div>
           
-          <div className="hidden md:flex space-x-8">
+          <div className="hidden md:flex space-x-8 items-center">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.href}
-                className={`text-sm font-bold uppercase tracking-wider transition-colors hover:text-gold ${
+                className={`text-xs font-bold uppercase tracking-widest transition-colors hover:text-gold ${
                   isScrolled || !isHome ? 'text-brand-800' : 'text-white'
                 }`}
               >
                 {link.name}
               </Link>
             ))}
+            
+            <div className="flex gap-2 ml-4 border-l border-slate-300/30 pl-4">
+              {['it', 'en', 'es', 'de', 'fr'].map(l => (
+                <button 
+                  key={l}
+                  onClick={() => setLang(l as any)}
+                  className={`text-[10px] font-bold uppercase w-6 h-6 rounded flex items-center justify-center transition-all ${lang === l ? 'bg-gold text-white shadow-sm' : 'text-slate-400 hover:bg-white/10'}`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="md:hidden">
@@ -173,7 +197,7 @@ const Hero = () => {
   );
 };
 
-const ServiceCard = ({ service, index }: { service: any; index: number }) => {
+const ServiceCard: React.FC<{ service: any; index: number }> = ({ service, index }) => {
   const Icon = service.icon === 'Wrench' ? Wrench : service.icon === 'Shield' ? Shield : Settings;
   
   return (
@@ -313,7 +337,7 @@ const Contact = () => {
                   };
                   
                   try {
-                    const response = await window.fetch('/api/contact', {
+                    const response = await fetch('/api/contact', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(data),
@@ -432,9 +456,19 @@ export default function App() {
           <Route path="/saldatura" element={<WeldingPage />} />
           <Route path="/compressori" element={<CompressorsPage />} />
           <Route path="/marchi" element={<BrandsPage />} />
+          <Route path="/marchi/:slug" element={<BrandDetailPage />} />
+          <Route path="/categorie/:slug" element={<CategoryDetailPage />} />
           <Route path="/catalogo" element={<CatalogPage />} />
           <Route path="/accedi-al-catalogo" element={<LoginPage />} />
           <Route path="/prodotto/:id" element={<ProductDetailPage />} />
+          
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<div className="text-center py-20"><h2 className="text-4xl font-bold text-slate-200 uppercase italic">Seleziona una sezione</h2></div>} />
+            <Route path="brands" element={<AdminBrands />} />
+            <Route path="categories" element={<AdminCategories />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="import" element={<AdminImport />} />
+          </Route>
         </Routes>
         
         <footer className="bg-brand-900 border-t border-white/10 py-12 text-slate-500 text-sm">

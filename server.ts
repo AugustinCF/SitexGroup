@@ -6,20 +6,35 @@ import Database from 'better-sqlite3';
 import session from 'express-session';
 import multer from 'multer';
 import fs from 'fs';
+import sharp from 'sharp';
+import slugify from 'slugify';
+import axios from 'axios';
+import { parse } from 'csv-parse/sync';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const db = new Database(path.join(__dirname, 'tpc_group.db'));
 
-// Assicurati che la cartella uploads esista
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
+// Directories per i caricamenti
+const uploadDirs = {
+  logos: path.join(__dirname, 'uploads/logos'),
+  categories: path.join(__dirname, 'uploads/categories'),
+  products: path.join(__dirname, 'uploads/products'),
+  temp: path.join(__dirname, 'uploads/temp')
+};
 
-// Configurazione Multer per caricamento file
+Object.values(uploadDirs).forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Configurazione Multer generica
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir);
+    cb(null, uploadDirs.temp);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -28,18 +43,46 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Inizializzazione Database
+// Inizializzazione Database con nuovo schema
 db.exec(`
+  CREATE TABLE IF NOT EXISTS brands (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name_it TEXT, name_en TEXT, name_es TEXT, name_de TEXT, name_fr TEXT,
+    slug TEXT UNIQUE,
+    description_it TEXT, description_en TEXT, description_es TEXT, description_de TEXT, description_fr TEXT,
+    logo TEXT,
+    website TEXT,
+    visibility BOOLEAN DEFAULT 1,
+    meta_title_it TEXT, meta_title_en TEXT, meta_title_es TEXT, meta_title_de TEXT, meta_title_fr TEXT,
+    meta_description_it TEXT, meta_description_en TEXT, meta_description_es TEXT, meta_description_de TEXT, meta_description_fr TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name_it TEXT, name_en TEXT, name_es TEXT, name_de TEXT, name_fr TEXT,
+    slug TEXT UNIQUE,
+    description_it TEXT, description_en TEXT, description_es TEXT, description_de TEXT, description_fr TEXT,
+    image TEXT,
+    meta_title_it TEXT, meta_title_en TEXT, meta_title_es TEXT, meta_title_de TEXT, meta_title_fr TEXT,
+    meta_description_it TEXT, meta_description_en TEXT, meta_description_es TEXT, meta_description_de TEXT, meta_description_fr TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    description TEXT,
-    internalCode TEXT,
-    category TEXT,
-    brand TEXT,
+    name_it TEXT, name_en TEXT, name_es TEXT, name_de TEXT, name_fr TEXT,
+    slug TEXT UNIQUE,
+    description_it TEXT, description_en TEXT, description_es TEXT, description_de TEXT, description_fr TEXT,
+    visibility BOOLEAN DEFAULT 1,
+    brandId INTEGER,
+    categoryId INTEGER,
     price REAL,
-    condition TEXT DEFAULT 'Nuovo',
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    meta_title_it TEXT, meta_title_en TEXT, meta_title_es TEXT, meta_title_de TEXT, meta_title_fr TEXT,
+    meta_description_it TEXT, meta_description_en TEXT, meta_description_es TEXT, meta_description_de TEXT, meta_description_fr TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (brandId) REFERENCES brands(id) ON DELETE SET NULL,
+    FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE SET NULL
   );
 
   CREATE TABLE IF NOT EXISTS product_images (
@@ -48,67 +91,41 @@ db.exec(`
     imageUrl TEXT NOT NULL,
     FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE
   );
-
-  CREATE TABLE IF NOT EXISTS categories (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
-  );
-
-  CREATE TABLE IF NOT EXISTS brands (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
-  );
 `);
-
-// Migrazione veloce se mancano colonne o inserimento dati iniziali
-try {
-  const columns = db.prepare("PRAGMA table_info(products)").all();
-  const columnNames = columns.map((cl: any) => cl.name);
-  
-  if (!columnNames.includes('condition')) {
-    db.exec(`ALTER TABLE products ADD COLUMN condition TEXT DEFAULT 'Nuovo'`);
-  }
-
-  // Aggiungi alcune categorie di esempio se vuote
-  const catCount = db.prepare('SELECT COUNT(*) as count FROM categories').get() as any;
-  if (catCount.count === 0) {
-    const insertCat = db.prepare('INSERT INTO categories (name) VALUES (?)');
-    ['Cottura', 'Refrigerazione', 'Lavaggio', 'Preparazione', 'Arredamento'].forEach(c => insertCat.run(c));
-  }
-} catch (e) {
-  console.error('Errore durante migrazione/setup:', e);
-}
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3000;
+  const PORT = parseInt(process.env.PORT || '3000', 10);
   
-  console.log('--- Avvio TPC Group Backend ---');
-  console.log(`Porta configurata: ${PORT}`);
-  console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-
-  // Necessario se sei dietro Apache/Nginx per gestire correttamente le sessioni su HTTPS
   app.set('trust proxy', 1);
-
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  app.use('/uploads', express.static(uploadDir));
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
   app.use(session({
-    secret: 'tpc-group-secret-key',
+    secret: 'tpc-group-secret-key-v2',
     resave: false,
     saveUninitialized: false,
     cookie: { 
-      secure: process.env.NODE_ENV === 'production', // true se usi HTTPS in produzione
-      maxAge: 24 * 60 * 60 * 1000 // 24 ore
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000 
     }
   }));
 
-  // --- API AUTH ---
-  
-  app.post('/api/login', (req, res) => {
+  // Helper per Admin
+  const isAdmin = (req: any, res: any, next: any) => {
+    if (req.session && req.session.isAdmin) {
+      next();
+    } else {
+      res.status(401).json({ error: 'Unauthorized' });
+    }
+  };
+
+  // --- AUTH ---
+  app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
-    // Definiamo una password admin semplice per ora
-    if (password === 'admin123') {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    if (password === adminPassword) {
       (req.session as any).isAdmin = true;
       res.json({ success: true });
     } else {
@@ -117,173 +134,389 @@ async function startServer() {
   });
 
   app.post('/api/logout', (req, res) => {
-    req.session.destroy(() => {
-      res.json({ success: true });
-    });
+    req.session.destroy(() => res.json({ success: true }));
   });
 
   app.get('/api/check-auth', (req, res) => {
     res.json({ isAdmin: !!(req.session as any).isAdmin });
   });
 
-  // --- API PRODOTTI ---
-  // ... (nel mezzo del file, dopo le rotte dei prodotti)
-
-  // --- API CATEGORIE ---
-  app.get('/api/categories', (req, res) => {
-    const categories = db.prepare('SELECT * FROM categories ORDER BY name ASC').all();
-    res.json(categories);
-  });
-
-  app.post('/api/categories', (req, res) => {
-    if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
-    try {
-      const { name } = req.body;
-      const info = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name);
-      res.json({ id: info.lastInsertRowid });
-    } catch (error: any) {
-      res.status(400).json({ error: 'Categoria già esistente o nome non valido' });
-    }
-  });
-
-  app.delete('/api/categories/:id', (req, res) => {
-    if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
-    db.prepare('DELETE FROM categories WHERE id = ?').run(req.params.id);
-    res.json({ success: true });
-  });
-
-  // --- API MARCHI ---
+  // --- BRANDS CRUD ---
   app.get('/api/brands', (req, res) => {
-    const brands = db.prepare('SELECT * FROM brands ORDER BY name ASC').all();
+    const brands = db.prepare('SELECT * FROM brands ORDER BY name_it ASC').all();
     res.json(brands);
   });
 
-  app.post('/api/brands', (req, res) => {
-    if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
+  app.post('/api/brands', isAdmin, upload.single('logo'), async (req, res) => {
     try {
-      const { name } = req.body;
-      const info = db.prepare('INSERT INTO brands (name) VALUES (?)').run(name);
-      res.json({ id: info.lastInsertRowid });
-    } catch (error: any) {
-      res.status(400).json({ error: 'Marchio già esistente o nome non valido' });
+      const data = req.body;
+      const slug = data.slug || slugify(data.name_it, { lower: true });
+      let logoPath = '';
+
+      if (req.file) {
+        const ext = path.extname(req.file.originalname);
+        const fileName = `${Date.now()}-brand${ext}`;
+        const destPath = path.join(uploadDirs.logos, fileName);
+        
+        await sharp(req.file.path)
+          .resize(800, 600, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+          .toFile(destPath);
+        
+        fs.unlinkSync(req.file.path);
+        logoPath = `/uploads/logos/${fileName}`;
+      }
+
+      const stmt = db.prepare(`
+        INSERT INTO brands (
+          name_it, name_en, name_es, name_de, name_fr, slug, description_it, description_en, description_es, description_de, description_fr,
+          logo, website, visibility, meta_title_it, meta_title_en, meta_title_es, meta_title_de, meta_title_fr,
+          meta_description_it, meta_description_en, meta_description_es, meta_description_de, meta_description_fr
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `);
+      
+      stmt.run(
+        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
+        slug,
+        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
+        logoPath, data.website, data.visibility === 'true' ? 1 : 0,
+        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
+        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr
+      );
+
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
-  app.delete('/api/brands/:id', (req, res) => {
-    if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
+  app.delete('/api/brands/:id', isAdmin, (req, res) => {
     db.prepare('DELETE FROM brands WHERE id = ?').run(req.params.id);
     res.json({ success: true });
   });
 
-  app.get('/api/products', (req, res) => {
+  app.put('/api/brands/:id', isAdmin, upload.single('logo'), async (req, res) => {
     try {
-      const products = db.prepare('SELECT * FROM products ORDER BY createdAt DESC').all();
-      const productsWithImages = products.map((p: any) => {
-        const images = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(p.id);
-        return { 
-          ...p, 
-          images: images.map((img: any) => img.imageUrl),
-          imageUrl: images.length > 0 ? images[0].imageUrl : null
-        };
-      });
-      res.json(productsWithImages);
-    } catch (error: any) {
-      console.error('Error fetching products:', error);
-      res.status(500).json({ error: error.message });
+      const data = req.body;
+      const id = req.params.id;
+      const slug = data.slug || slugify(data.name_it, { lower: true });
+      
+      let updateQuery = `
+        UPDATE brands SET 
+          name_it=?, name_en=?, name_es=?, name_de=?, name_fr=?, 
+          slug=?, 
+          description_it=?, description_en=?, description_es=?, description_de=?, description_fr=?,
+          website=?, visibility=?, 
+          meta_title_it=?, meta_title_en=?, meta_title_es=?, meta_title_de=?, meta_title_fr=?,
+          meta_description_it=?, meta_description_en=?, meta_description_es=?, meta_description_de=?, meta_description_fr=?
+      `;
+      let params = [
+        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
+        slug,
+        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
+        data.website, data.visibility === 'true' ? 1 : 0,
+        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
+        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr
+      ];
+
+      if (req.file) {
+        const ext = path.extname(req.file.originalname);
+        const fileName = `${Date.now()}-brand${ext}`;
+        const destPath = path.join(uploadDirs.logos, fileName);
+        await sharp(req.file.path)
+          .resize(800, 600, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+          .toFile(destPath);
+        fs.unlinkSync(req.file.path);
+        updateQuery += `, logo=?`;
+        params.push(`/uploads/logos/${fileName}`);
+      }
+
+      updateQuery += ` WHERE id=?`;
+      params.push(id);
+
+      db.prepare(updateQuery).run(...params);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/brands/by-slug/:slug', (req, res) => {
+    const brand = db.prepare('SELECT * FROM brands WHERE slug = ?').get(req.params.slug);
+    if (!brand) return res.status(404).json({ error: 'Not found' });
+    res.json(brand);
+  });
+
+  // --- CATEGORIES CRUD ---
+  app.get('/api/categories', (req, res) => {
+    const cats = db.prepare('SELECT * FROM categories ORDER BY name_it ASC').all();
+    res.json(cats);
+  });
+
+  app.post('/api/categories', isAdmin, upload.single('image'), async (req, res) => {
+    try {
+      const data = req.body;
+      const slug = data.slug || slugify(data.name_it, { lower: true });
+      let imgPath = '';
+
+      if (req.file) {
+        const ext = path.extname(req.file.originalname);
+        const fileName = `${Date.now()}-cat${ext}`;
+        const destPath = path.join(uploadDirs.categories, fileName);
+        
+        await sharp(req.file.path).toFile(destPath);
+        fs.unlinkSync(req.file.path);
+        imgPath = `/uploads/categories/${fileName}`;
+      }
+
+      const stmt = db.prepare(`
+        INSERT INTO categories (
+          name_it, name_en, name_es, name_de, name_fr, slug, description_it, description_en, description_es, description_de, description_fr,
+          image, meta_title_it, meta_title_en, meta_title_es, meta_title_de, meta_title_fr,
+          meta_description_it, meta_description_en, meta_description_es, meta_description_de, meta_description_fr
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `);
+
+      stmt.run(
+        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
+        slug,
+        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
+        imgPath,
+        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
+        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr
+      );
+
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/categories/:id', isAdmin, (req, res) => {
+    db.prepare('DELETE FROM categories WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  });
+
+  app.put('/api/categories/:id', isAdmin, upload.single('image'), async (req, res) => {
+    try {
+      const data = req.body;
+      const id = req.params.id;
+      const slug = data.slug || slugify(data.name_it, { lower: true });
+      
+      let updateQuery = `
+        UPDATE categories SET 
+          name_it=?, name_en=?, name_es=?, name_de=?, name_fr=?, 
+          slug=?, 
+          description_it=?, description_en=?, description_es=?, description_de=?, description_fr=?,
+          meta_title_it=?, meta_title_en=?, meta_title_es=?, meta_title_de=?, meta_title_fr=?,
+          meta_description_it=?, meta_description_en=?, meta_description_es=?, meta_description_de=?, meta_description_fr=?
+      `;
+      let params = [
+        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
+        slug,
+        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
+        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
+        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr
+      ];
+
+      if (req.file) {
+        const ext = path.extname(req.file.originalname);
+        const fileName = `${Date.now()}-cat${ext}`;
+        const destPath = path.join(uploadDirs.categories, fileName);
+        await sharp(req.file.path).toFile(destPath);
+        fs.unlinkSync(req.file.path);
+        updateQuery += `, image=?`;
+        params.push(`/uploads/categories/${fileName}`);
+      }
+
+      updateQuery += ` WHERE id=?`;
+      params.push(id);
+
+      db.prepare(updateQuery).run(...params);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/categories/by-slug/:slug', (req, res) => {
+    const cat = db.prepare('SELECT * FROM categories WHERE slug = ?').get(req.params.slug);
+    if (!cat) return res.status(404).json({ error: 'Not found' });
+    res.json(cat);
+  });
+
+  // --- PRODUCTS CRUD ---
+  app.get('/api/products', (req, res) => {
+    const products = db.prepare(`
+      SELECT p.*, b.name_it as brandName, c.name_it as categoryName 
+      FROM products p 
+      LEFT JOIN brands b ON p.brandId = b.id 
+      LEFT JOIN categories c ON p.categoryId = c.id
+      ORDER BY p.createdAt DESC
+    `).all();
+    
+    const results = products.map((p: any) => {
+      const images = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(p.id);
+      return { ...p, images: images.map((img: any) => img.imageUrl) };
+    });
+    res.json(results);
+  });
+
+  app.post('/api/products', isAdmin, upload.array('images', 10), async (req, res) => {
+    try {
+      const data = req.body;
+      const slug = data.slug || slugify(data.name_it, { lower: true });
+      
+      const stmt = db.prepare(`
+        INSERT INTO products (
+          name_it, name_en, name_es, name_de, name_fr, slug, description_it, description_en, description_es, description_de, description_fr,
+          visibility, brandId, categoryId, price, meta_title_it, meta_title_en, meta_title_es, meta_title_de, meta_title_fr,
+          meta_description_it, meta_description_en, meta_description_es, meta_description_de, meta_description_fr
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `);
+
+      const info = stmt.run(
+        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
+        slug,
+        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
+        data.visibility === 'true' ? 1 : 0,
+        data.brandId || null,
+        data.categoryId || null,
+        parseFloat(data.price) || 0,
+        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
+        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr
+      );
+
+      const productId = info.lastInsertRowid;
+      const files = req.files as Express.Multer.File[];
+      if (files) {
+        const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
+        for (const file of files) {
+          const fileName = `${Date.now()}-${file.filename}`;
+          const destPath = path.join(uploadDirs.products, fileName);
+          await sharp(file.path).toFile(destPath);
+          fs.unlinkSync(file.path);
+          insertImg.run(productId, `/uploads/products/${fileName}`);
+        }
+      }
+
+      res.json({ success: true, id: productId });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   app.get('/api/products/:id', (req, res) => {
-    try {
-      const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
-      if (!product) return res.status(404).json({ message: 'Prodotto non trovato' });
-      
-      const images = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(req.params.id);
-      res.json({
-        ...product,
-        images: images.map((img: any) => img.imageUrl)
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
+    const product: any = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Not found' });
+    const images: any = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(product.id);
+    res.json({ ...product, images: images.map((img: any) => img.imageUrl) });
   });
 
-  app.post('/api/products', upload.array('images', 10), (req, res) => {
-    if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
-    
-    try {
-      console.log('--- Richiesta Creazione Prodotto ---');
-      console.log('Headers:', req.headers['content-type']);
-      console.log('Body raw:', req.body);
-      
-      // Con multer, req.body dovrebbe essere popolato
-      const title = req.body.title ? String(req.body.title).trim() : null;
-      const description = req.body.description ? String(req.body.description).trim() : '';
-      const internalCode = req.body.internalCode ? String(req.body.internalCode).trim() : '';
-      const category = req.body.category ? String(req.body.category).trim() : '';
-      const brand = req.body.brand ? String(req.body.brand).trim() : '';
-      const price = parseFloat(req.body.price) || 0;
-      const condition = req.body.condition ? String(req.body.condition).trim() : 'Nuovo';
-      
-      if (!title) {
-        console.error('ERRORE: Titolo mancante in req.body');
-        return res.status(400).json({ error: 'Il titolo è obbligatorio' });
-      }
-
-      console.log('Dati validati:', { title, internalCode, category, brand, price, condition });
-
-      const files = req.files as Express.Multer.File[];
-      console.log('Numero file caricati:', files ? files.length : 0);
-      
-      const info = db.prepare('INSERT INTO products (title, description, internalCode, category, brand, price, condition) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-        title, 
-        description, 
-        internalCode, 
-        category, 
-        brand, 
-        price, 
-        condition
-      );
-      
-      const productId = info.lastInsertRowid;
-      console.log('Prodotto creato con successo. ID:', productId);
-      
-      if (files && files.length > 0) {
-        const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
-        for (const file of files) {
-          const imgUrl = `/uploads/${file.filename}`;
-          insertImg.run(productId, imgUrl);
-          console.log('Immagine associata:', imgUrl);
-        }
-      }
-      
-      res.json({ id: productId, success: true });
-    } catch (error: any) {
-      console.error('SERVER FATAL ERROR (POST /api/products):', error);
-      res.status(500).json({ error: error.message, stack: error.stack });
-    }
-  });
-
-  app.delete('/api/products/:id', (req, res) => {
-    if (!(req.session as any).isAdmin) return res.status(403).send('Forbidden');
+  app.delete('/api/products/:id', isAdmin, (req, res) => {
     db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
     res.json({ success: true });
   });
 
+  app.put('/api/products/:id', isAdmin, upload.array('images', 10), async (req, res) => {
+    try {
+      const data = req.body;
+      const id = req.params.id;
+      const slug = data.slug || slugify(data.name_it, { lower: true });
+      
+      let updateQuery = `
+        UPDATE products SET 
+          name_it=?, name_en=?, name_es=?, name_de=?, name_fr=?, 
+          slug=?, 
+          description_it=?, description_en=?, description_es=?, description_de=?, description_fr=?,
+          visibility=?, brandId=?, categoryId=?, price=?,
+          meta_title_it=?, meta_title_en=?, meta_title_es=?, meta_title_de=?, meta_title_fr=?,
+          meta_description_it=?, meta_description_en=?, meta_description_es=?, meta_description_de=?, meta_description_fr=?
+        WHERE id=?
+      `;
+      let params = [
+        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
+        slug,
+        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
+        data.visibility === 'true' ? 1 : 0,
+        data.brandId || null,
+        data.categoryId || null,
+        parseFloat(data.price) || 0,
+        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
+        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr,
+        id
+      ];
 
-  // --- ALTRE API ---
-  
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok' });
+      db.prepare(updateQuery).run(...params);
+
+      const files = req.files as Express.Multer.File[];
+      if (files && files.length > 0) {
+        const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
+        for (const file of files) {
+          const fileName = `${Date.now()}-${file.filename}`;
+          const destPath = path.join(uploadDirs.products, fileName);
+          await sharp(file.path).toFile(destPath);
+          fs.unlinkSync(file.path);
+          insertImg.run(id, `/uploads/products/${fileName}`);
+        }
+      }
+
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
-  app.post('/api/contact', (req, res) => {
-    console.log('Messaggio contatti:', req.body);
-    res.json({ success: true });
+  app.get('/api/products/by-slug/:slug', (req, res) => {
+    const product: any = db.prepare('SELECT * FROM products WHERE slug = ?').get(req.params.slug);
+    if (!product) return res.status(404).json({ error: 'Not found' });
+    const images: any = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(product.id);
+    res.json({ ...product, images: images.map((img: any) => img.imageUrl) });
   });
 
-  // --- CONFIGURAZIONE VITE / PRODUZIONE ---
+  // --- BULK IMPORT ---
+  app.post('/api/import', isAdmin, upload.single('csv'), async (req, res) => {
+    if (!req.file) return res.status(400).send('No file uploaded');
+    
+    try {
+      const fileContent = fs.readFileSync(req.file.path, 'utf-8');
+      const records: any[] = parse(fileContent, { columns: true, skip_empty_lines: true });
+      
+      for (const row of records) {
+        // Logica semplificata di import: se esiste slug salta o aggiorna
+        // Row potrebbe contenere: type (product/brand/category), name_it, slug, description_it, imageUrls (comma separated)
+        if (row.type === 'product') {
+          const slug = row.slug || slugify(row.name_it, { lower: true });
+          const stmt = db.prepare('INSERT OR IGNORE INTO products (name_it, slug, description_it, price) VALUES (?, ?, ?, ?)');
+          const info = stmt.run(row.name_it, slug, row.description_it, parseFloat(row.price) || 0);
+          
+          if (info.changes > 0 && row.imageUrls) {
+            const pId = info.lastInsertRowid;
+            const urls = row.imageUrls.split(',');
+            const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
+            for (let url of urls) {
+              url = url.trim();
+              try {
+                const imgRes = await axios.get(url, { responseType: 'arraybuffer' });
+                const fileName = `${Date.now()}-${Math.round(Math.random()*1000)}.jpg`;
+                const destPath = path.join(uploadDirs.products, fileName);
+                await sharp(imgRes.data).toFile(destPath);
+                insertImg.run(pId, `/uploads/products/${fileName}`);
+              } catch (err) {
+                console.error('Errore download immagine:', url);
+              }
+            }
+          }
+        }
+      }
+      
+      fs.unlinkSync(req.file.path);
+      res.json({ success: true, count: records.length });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
+  // --- VITE MIDDLEWARE ---
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -298,8 +531,8 @@ async function startServer() {
     });
   }
 
-  app.listen(Number(PORT), '0.0.0.0', () => {
-    console.log(`Server attivo su http://localhost:${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
