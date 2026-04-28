@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import Database from 'better-sqlite3';
+import { PrismaClient } from '@prisma/client';
 import session from 'express-session';
 import multer from 'multer';
 import fs from 'fs';
@@ -15,7 +15,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const db = new Database(path.join(__dirname, 'tpc_group.db'));
+const prisma = new PrismaClient();
 
 // Directories per i caricamenti
 const uploadDirs = {
@@ -42,56 +42,6 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage });
-
-// Inizializzazione Database con nuovo schema
-db.exec(`
-  CREATE TABLE IF NOT EXISTS brands (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name_it TEXT, name_en TEXT, name_es TEXT, name_de TEXT, name_fr TEXT,
-    slug TEXT UNIQUE,
-    description_it TEXT, description_en TEXT, description_es TEXT, description_de TEXT, description_fr TEXT,
-    logo TEXT,
-    website TEXT,
-    visibility BOOLEAN DEFAULT 1,
-    meta_title_it TEXT, meta_title_en TEXT, meta_title_es TEXT, meta_title_de TEXT, meta_title_fr TEXT,
-    meta_description_it TEXT, meta_description_en TEXT, meta_description_es TEXT, meta_description_de TEXT, meta_description_fr TEXT,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS categories (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name_it TEXT, name_en TEXT, name_es TEXT, name_de TEXT, name_fr TEXT,
-    slug TEXT UNIQUE,
-    description_it TEXT, description_en TEXT, description_es TEXT, description_de TEXT, description_fr TEXT,
-    image TEXT,
-    meta_title_it TEXT, meta_title_en TEXT, meta_title_es TEXT, meta_title_de TEXT, meta_title_fr TEXT,
-    meta_description_it TEXT, meta_description_en TEXT, meta_description_es TEXT, meta_description_de TEXT, meta_description_fr TEXT,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name_it TEXT, name_en TEXT, name_es TEXT, name_de TEXT, name_fr TEXT,
-    slug TEXT UNIQUE,
-    description_it TEXT, description_en TEXT, description_es TEXT, description_de TEXT, description_fr TEXT,
-    visibility BOOLEAN DEFAULT 1,
-    brandId INTEGER,
-    categoryId INTEGER,
-    price REAL,
-    meta_title_it TEXT, meta_title_en TEXT, meta_title_es TEXT, meta_title_de TEXT, meta_title_fr TEXT,
-    meta_description_it TEXT, meta_description_en TEXT, meta_description_es TEXT, meta_description_de TEXT, meta_description_fr TEXT,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (brandId) REFERENCES brands(id) ON DELETE SET NULL,
-    FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE SET NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS product_images (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    productId INTEGER NOT NULL,
-    imageUrl TEXT NOT NULL,
-    FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE
-  );
-`);
 
 async function startServer() {
   const app = express();
@@ -125,13 +75,10 @@ async function startServer() {
   app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-    console.log(`Login attempt with password length: ${password?.length || 0}`);
     if (password === adminPassword) {
       (req.session as any).isAdmin = true;
-      console.log(`Login successful for SessionID=${req.sessionID}`);
       res.json({ success: true });
     } else {
-      console.log(`Login failed for SessionID=${req.sessionID}`);
       res.status(401).json({ success: false, message: 'Password errata' });
     }
   });
@@ -142,14 +89,22 @@ async function startServer() {
 
   app.get('/api/check-auth', (req, res) => {
     const isAdmin = !!(req.session as any).isAdmin;
-    console.log(`Check Auth: isAdmin=${isAdmin}, SessionID=${req.sessionID}`);
     res.json({ isAdmin });
   });
 
-  // --- BRANDS CRUD ---
-  app.get('/api/brands', (req, res) => {
-    const brands = db.prepare('SELECT * FROM brands ORDER BY name_it ASC').all();
-    res.json(brands);
+  // --- BRANDS CRUD (already refactored in previous step, skipping to products) ---
+
+  // NOTE: I'll include the Brands/Categories routes here again to ensure consistency if needed, 
+  // but to keep the edit clean I'll target the Products section.
+  app.get('/api/brands', async (req, res) => {
+    try {
+      const brands = await prisma.brand.findMany({
+        orderBy: { name_it: 'asc' }
+      });
+      res.json(brands);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   app.post('/api/brands', isAdmin, upload.single('logo'), async (req, res) => {
@@ -171,22 +126,16 @@ async function startServer() {
         logoPath = `/uploads/logos/${fileName}`;
       }
 
-      const stmt = db.prepare(`
-        INSERT INTO brands (
-          name_it, name_en, name_es, name_de, name_fr, slug, description_it, description_en, description_es, description_de, description_fr,
-          logo, website, visibility, meta_title_it, meta_title_en, meta_title_es, meta_title_de, meta_title_fr,
-          meta_description_it, meta_description_en, meta_description_es, meta_description_de, meta_description_fr
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-      `);
-      
-      stmt.run(
-        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
-        slug,
-        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
-        logoPath, data.website, data.visibility === 'true' ? 1 : 0,
-        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
-        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr
-      );
+      await prisma.brand.create({
+        data: {
+          name_it: data.name_it, name_en: data.name_en, name_es: data.name_es, name_de: data.name_de, name_fr: data.name_fr,
+          slug,
+          description_it: data.description_it, description_en: data.description_en, description_es: data.description_es, description_de: data.description_de, description_fr: data.description_fr,
+          logo: logoPath, website: data.website, visibility: data.visibility === 'true',
+          meta_title_it: data.meta_title_it, meta_title_en: data.meta_title_en, meta_title_es: data.meta_title_es, meta_title_de: data.meta_title_de, meta_title_fr: data.meta_title_fr,
+          meta_description_it: data.meta_description_it, meta_description_en: data.meta_description_en, meta_description_es: data.meta_description_es, meta_description_de: data.meta_description_de, meta_description_fr: data.meta_description_fr
+        }
+      });
 
       res.json({ success: true });
     } catch (e: any) {
@@ -194,34 +143,31 @@ async function startServer() {
     }
   });
 
-  app.delete('/api/brands/:id', isAdmin, (req, res) => {
-    db.prepare('DELETE FROM brands WHERE id = ?').run(req.params.id);
-    res.json({ success: true });
+  app.delete('/api/brands/:id', isAdmin, async (req, res) => {
+    try {
+      await prisma.brand.delete({
+        where: { id: parseInt(req.params.id) }
+      });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   app.put('/api/brands/:id', isAdmin, upload.single('logo'), async (req, res) => {
     try {
       const data = req.body;
-      const id = req.params.id;
+      const id = parseInt(req.params.id);
       const slug = data.slug || slugify(data.name_it, { lower: true });
       
-      let updateQuery = `
-        UPDATE brands SET 
-          name_it=?, name_en=?, name_es=?, name_de=?, name_fr=?, 
-          slug=?, 
-          description_it=?, description_en=?, description_es=?, description_de=?, description_fr=?,
-          website=?, visibility=?, 
-          meta_title_it=?, meta_title_en=?, meta_title_es=?, meta_title_de=?, meta_title_fr=?,
-          meta_description_it=?, meta_description_en=?, meta_description_es=?, meta_description_de=?, meta_description_fr=?
-      `;
-      let params = [
-        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
+      const updateData: any = {
+        name_it: data.name_it, name_en: data.name_en, name_es: data.name_es, name_de: data.name_de, name_fr: data.name_fr,
         slug,
-        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
-        data.website, data.visibility === 'true' ? 1 : 0,
-        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
-        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr
-      ];
+        description_it: data.description_it, description_en: data.description_en, description_es: data.description_es, description_de: data.description_de, description_fr: data.description_fr,
+        website: data.website, visibility: data.visibility === 'true',
+        meta_title_it: data.meta_title_it, meta_title_en: data.meta_title_en, meta_title_es: data.meta_title_es, meta_title_de: data.meta_title_de, meta_title_fr: data.meta_title_fr,
+        meta_description_it: data.meta_description_it, meta_description_en: data.meta_description_en, meta_description_es: data.meta_description_es, meta_description_de: data.meta_description_de, meta_description_fr: data.meta_description_fr
+      };
 
       if (req.file) {
         const ext = path.extname(req.file.originalname);
@@ -231,30 +177,41 @@ async function startServer() {
           .resize(800, 600, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
           .toFile(destPath);
         fs.unlinkSync(req.file.path);
-        updateQuery += `, logo=?`;
-        params.push(`/uploads/logos/${fileName}`);
+        updateData.logo = `/uploads/logos/${fileName}`;
       }
 
-      updateQuery += ` WHERE id=?`;
-      params.push(id);
-
-      db.prepare(updateQuery).run(...params);
+      await prisma.brand.update({
+        where: { id },
+        data: updateData
+      });
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
   });
 
-  app.get('/api/brands/by-slug/:slug', (req, res) => {
-    const brand = db.prepare('SELECT * FROM brands WHERE slug = ?').get(req.params.slug);
-    if (!brand) return res.status(404).json({ error: 'Not found' });
-    res.json(brand);
+  app.get('/api/brands/by-slug/:slug', async (req, res) => {
+    try {
+      const brand = await prisma.brand.findUnique({
+        where: { slug: req.params.slug }
+      });
+      if (!brand) return res.status(404).json({ error: 'Not found' });
+      res.json(brand);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // --- CATEGORIES CRUD ---
-  app.get('/api/categories', (req, res) => {
-    const cats = db.prepare('SELECT * FROM categories ORDER BY name_it ASC').all();
-    res.json(cats);
+  app.get('/api/categories', async (req, res) => {
+    try {
+      const cats = await prisma.category.findMany({
+        orderBy: { name_it: 'asc' }
+      });
+      res.json(cats);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   app.post('/api/categories', isAdmin, upload.single('image'), async (req, res) => {
@@ -273,22 +230,16 @@ async function startServer() {
         imgPath = `/uploads/categories/${fileName}`;
       }
 
-      const stmt = db.prepare(`
-        INSERT INTO categories (
-          name_it, name_en, name_es, name_de, name_fr, slug, description_it, description_en, description_es, description_de, description_fr,
-          image, meta_title_it, meta_title_en, meta_title_es, meta_title_de, meta_title_fr,
-          meta_description_it, meta_description_en, meta_description_es, meta_description_de, meta_description_fr
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-      `);
-
-      stmt.run(
-        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
-        slug,
-        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
-        imgPath,
-        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
-        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr
-      );
+      await prisma.category.create({
+        data: {
+          name_it: data.name_it, name_en: data.name_en, name_es: data.name_es, name_de: data.name_de, name_fr: data.name_fr,
+          slug,
+          description_it: data.description_it, description_en: data.description_en, description_es: data.description_es, description_de: data.description_de, description_fr: data.description_fr,
+          image: imgPath,
+          meta_title_it: data.meta_title_it, meta_title_en: data.meta_title_en, meta_title_es: data.meta_title_es, meta_title_de: data.meta_title_de, meta_title_fr: data.meta_title_fr,
+          meta_description_it: data.meta_description_it, meta_description_en: data.meta_description_en, meta_description_es: data.meta_description_es, meta_description_de: data.meta_description_de, meta_description_fr: data.meta_description_fr
+        }
+      });
 
       res.json({ success: true });
     } catch (e: any) {
@@ -296,32 +247,30 @@ async function startServer() {
     }
   });
 
-  app.delete('/api/categories/:id', isAdmin, (req, res) => {
-    db.prepare('DELETE FROM categories WHERE id = ?').run(req.params.id);
-    res.json({ success: true });
+  app.delete('/api/categories/:id', isAdmin, async (req, res) => {
+    try {
+      await prisma.category.delete({
+        where: { id: parseInt(req.params.id) }
+      });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   app.put('/api/categories/:id', isAdmin, upload.single('image'), async (req, res) => {
     try {
       const data = req.body;
-      const id = req.params.id;
+      const id = parseInt(req.params.id);
       const slug = data.slug || slugify(data.name_it, { lower: true });
       
-      let updateQuery = `
-        UPDATE categories SET 
-          name_it=?, name_en=?, name_es=?, name_de=?, name_fr=?, 
-          slug=?, 
-          description_it=?, description_en=?, description_es=?, description_de=?, description_fr=?,
-          meta_title_it=?, meta_title_en=?, meta_title_es=?, meta_title_de=?, meta_title_fr=?,
-          meta_description_it=?, meta_description_en=?, meta_description_es=?, meta_description_de=?, meta_description_fr=?
-      `;
-      let params = [
-        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
+      const updateData: any = {
+        name_it: data.name_it, name_en: data.name_en, name_es: data.name_es, name_de: data.name_de, name_fr: data.name_fr,
         slug,
-        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
-        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
-        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr
-      ];
+        description_it: data.description_it, description_en: data.description_en, description_es: data.description_es, description_de: data.description_de, description_fr: data.description_fr,
+        meta_title_it: data.meta_title_it, meta_title_en: data.meta_title_en, meta_title_es: data.meta_title_es, meta_title_de: data.meta_title_de, meta_title_fr: data.meta_title_fr,
+        meta_description_it: data.meta_description_it, meta_description_en: data.meta_description_en, meta_description_es: data.meta_description_es, meta_description_de: data.meta_description_de, meta_description_fr: data.meta_description_fr
+      };
 
       if (req.file) {
         const ext = path.extname(req.file.originalname);
@@ -329,41 +278,56 @@ async function startServer() {
         const destPath = path.join(uploadDirs.categories, fileName);
         await sharp(req.file.path).toFile(destPath);
         fs.unlinkSync(req.file.path);
-        updateQuery += `, image=?`;
-        params.push(`/uploads/categories/${fileName}`);
+        updateData.image = `/uploads/categories/${fileName}`;
       }
 
-      updateQuery += ` WHERE id=?`;
-      params.push(id);
-
-      db.prepare(updateQuery).run(...params);
+      await prisma.category.update({
+        where: { id },
+        data: updateData
+      });
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
   });
 
-  app.get('/api/categories/by-slug/:slug', (req, res) => {
-    const cat = db.prepare('SELECT * FROM categories WHERE slug = ?').get(req.params.slug);
-    if (!cat) return res.status(404).json({ error: 'Not found' });
-    res.json(cat);
+  app.get('/api/categories/by-slug/:slug', async (req, res) => {
+    try {
+      const cat = await prisma.category.findUnique({
+        where: { slug: req.params.slug }
+      });
+      if (!cat) return res.status(404).json({ error: 'Not found' });
+      res.json(cat);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // --- PRODUCTS CRUD ---
-  app.get('/api/products', (req, res) => {
-    const products = db.prepare(`
-      SELECT p.*, b.name_it as brandName, c.name_it as categoryName 
-      FROM products p 
-      LEFT JOIN brands b ON p.brandId = b.id 
-      LEFT JOIN categories c ON p.categoryId = c.id
-      ORDER BY p.createdAt DESC
-    `).all();
-    
-    const results = products.map((p: any) => {
-      const images = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(p.id);
-      return { ...p, images: images.map((img: any) => img.imageUrl) };
-    });
-    res.json(results);
+  app.get('/api/products', async (req, res) => {
+    try {
+      const products = await prisma.product.findMany({
+        include: {
+          brand: true,
+          category: true,
+          images: true,
+          attributes: {
+            orderBy: { order: 'asc' }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      const results = products.map(p => ({
+        ...p,
+        brandName: p.brand?.name_it,
+        categoryName: p.category?.name_it,
+        images: p.images.map(img => img.imageUrl)
+      }));
+      res.json(results);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   app.post('/api/products', isAdmin, upload.array('images', 10), async (req, res) => {
@@ -371,101 +335,178 @@ async function startServer() {
       const data = req.body;
       const slug = data.slug || slugify(data.name_it, { lower: true });
       
-      const stmt = db.prepare(`
-        INSERT INTO products (
-          name_it, name_en, name_es, name_de, name_fr, slug, description_it, description_en, description_es, description_de, description_fr,
-          visibility, brandId, categoryId, price, meta_title_it, meta_title_en, meta_title_es, meta_title_de, meta_title_fr,
-          meta_description_it, meta_description_en, meta_description_es, meta_description_de, meta_description_fr
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-      `);
+      const product = await prisma.product.create({
+        data: {
+          name_it: data.name_it, name_en: data.name_en, name_es: data.name_es, name_de: data.name_de, name_fr: data.name_fr,
+          slug,
+          description_it: data.description_it, description_en: data.description_en, description_es: data.description_es, description_de: data.description_de, description_fr: data.description_fr,
+          visibility: data.visibility === 'true',
+          brandId: data.brandId ? parseInt(data.brandId) : null,
+          categoryId: data.categoryId ? parseInt(data.categoryId) : null,
+          price: parseFloat(data.price) || 0,
+          meta_title_it: data.meta_title_it, meta_title_en: data.meta_title_en, meta_title_es: data.meta_title_es, meta_title_de: data.meta_title_de, meta_title_fr: data.meta_title_fr,
+          meta_description_it: data.meta_description_it, meta_description_en: data.meta_description_en, meta_description_es: data.meta_description_es, meta_description_de: data.meta_description_de, meta_description_fr: data.meta_description_fr
+        }
+      });
 
-      const info = stmt.run(
-        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
-        slug,
-        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
-        data.visibility === 'true' ? 1 : 0,
-        data.brandId || null,
-        data.categoryId || null,
-        parseFloat(data.price) || 0,
-        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
-        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr
-      );
-
-      const productId = info.lastInsertRowid;
       const files = req.files as Express.Multer.File[];
       if (files) {
-        const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
         for (const file of files) {
           const fileName = `${Date.now()}-${file.filename}`;
           const destPath = path.join(uploadDirs.products, fileName);
           await sharp(file.path).toFile(destPath);
           fs.unlinkSync(file.path);
-          insertImg.run(productId, `/uploads/products/${fileName}`);
+          
+          await prisma.productImage.create({
+            data: {
+              productId: product.id,
+              imageUrl: `/uploads/products/${fileName}`
+            }
+          });
         }
       }
 
-      res.json({ success: true, id: productId });
+      res.json({ success: true, id: product.id });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
   });
 
-  app.get('/api/products/:id', (req, res) => {
-    const product: any = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
-    if (!product) return res.status(404).json({ error: 'Not found' });
-    const images: any = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(product.id);
-    res.json({ ...product, images: images.map((img: any) => img.imageUrl) });
+  app.get('/api/products/:id', async (req, res) => {
+    try {
+      const product = await prisma.product.findUnique({
+        where: { id: parseInt(req.params.id) },
+        include: { 
+          images: true,
+          attributes: {
+            orderBy: { order: 'asc' }
+          }
+        }
+      });
+      if (!product) return res.status(404).json({ error: 'Not found' });
+      res.json({ 
+        ...product, 
+        images: product.images.map((img: any) => img.imageUrl) 
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
-  app.delete('/api/products/:id', isAdmin, (req, res) => {
-    db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
-    res.json({ success: true });
+  app.delete('/api/products/:id', isAdmin, async (req, res) => {
+    try {
+      await prisma.product.delete({
+        where: { id: parseInt(req.params.id) }
+      });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   app.put('/api/products/:id', isAdmin, upload.array('images', 10), async (req, res) => {
     try {
       const data = req.body;
-      const id = req.params.id;
+      const id = parseInt(req.params.id);
       const slug = data.slug || slugify(data.name_it, { lower: true });
       
-      let updateQuery = `
-        UPDATE products SET 
-          name_it=?, name_en=?, name_es=?, name_de=?, name_fr=?, 
-          slug=?, 
-          description_it=?, description_en=?, description_es=?, description_de=?, description_fr=?,
-          visibility=?, brandId=?, categoryId=?, price=?,
-          meta_title_it=?, meta_title_en=?, meta_title_es=?, meta_title_de=?, meta_title_fr=?,
-          meta_description_it=?, meta_description_en=?, meta_description_es=?, meta_description_de=?, meta_description_fr=?
-        WHERE id=?
-      `;
-      let params = [
-        data.name_it, data.name_en, data.name_es, data.name_de, data.name_fr,
-        slug,
-        data.description_it, data.description_en, data.description_es, data.description_de, data.description_fr,
-        data.visibility === 'true' ? 1 : 0,
-        data.brandId || null,
-        data.categoryId || null,
-        parseFloat(data.price) || 0,
-        data.meta_title_it, data.meta_title_en, data.meta_title_es, data.meta_title_de, data.meta_title_fr,
-        data.meta_description_it, data.meta_description_en, data.meta_description_es, data.meta_description_de, data.meta_description_fr,
-        id
-      ];
-
-      db.prepare(updateQuery).run(...params);
+      await prisma.product.update({
+        where: { id },
+        data: {
+          name_it: data.name_it, name_en: data.name_en, name_es: data.name_es, name_de: data.name_de, name_fr: data.name_fr,
+          slug,
+          description_it: data.description_it, description_en: data.description_en, description_es: data.description_es, description_de: data.description_de, description_fr: data.description_fr,
+          visibility: data.visibility === 'true',
+          brandId: data.brandId ? parseInt(data.brandId) : null,
+          categoryId: data.categoryId ? parseInt(data.categoryId) : null,
+          price: parseFloat(data.price) || 0,
+          meta_title_it: data.meta_title_it, meta_title_en: data.meta_title_en, meta_title_es: data.meta_title_es, meta_title_de: data.meta_title_de, meta_title_fr: data.meta_title_fr,
+          meta_description_it: data.meta_description_it, meta_description_en: data.meta_description_en, meta_description_es: data.meta_description_es, meta_description_de: data.meta_description_de, meta_description_fr: data.meta_description_fr
+        }
+      });
 
       const files = req.files as Express.Multer.File[];
       if (files && files.length > 0) {
-        const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
         for (const file of files) {
           const fileName = `${Date.now()}-${file.filename}`;
           const destPath = path.join(uploadDirs.products, fileName);
           await sharp(file.path).toFile(destPath);
           fs.unlinkSync(file.path);
-          insertImg.run(id, `/uploads/products/${fileName}`);
+          
+          await prisma.productImage.create({
+            data: {
+              productId: id,
+              imageUrl: `/uploads/products/${fileName}`
+            }
+          });
         }
       }
 
       res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- ATTRIBUTES CRUD ---
+  app.get('/api/products/:productId/attributes', async (req, res) => {
+    try {
+      const attrs = await prisma.attribute.findMany({
+        where: { productId: parseInt(req.params.productId) },
+        orderBy: { order: 'asc' }
+      });
+      res.json(attrs);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/products/:productId/attributes', isAdmin, async (req, res) => {
+    try {
+      const data = req.body;
+      const productId = parseInt(req.params.productId);
+      
+      const attr = await prisma.attribute.create({
+        data: {
+          productId,
+          name_it: data.name_it,
+          name_en: data.name_en,
+          value_it: data.value_it,
+          value_en: data.value_en,
+          order: parseInt(data.order) || 0
+        }
+      });
+      res.json(attr);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/attributes/:id', isAdmin, async (req, res) => {
+    try {
+      await prisma.attribute.delete({
+        where: { id: parseInt(req.params.id) }
+      });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put('/api/attributes/:id', isAdmin, async (req, res) => {
+    try {
+      const data = req.body;
+      const attr = await prisma.attribute.update({
+        where: { id: parseInt(req.params.id) },
+        data: {
+          name_it: data.name_it,
+          name_en: data.name_en,
+          value_it: data.value_it,
+          value_en: data.value_en,
+          order: parseInt(data.order) || 0
+        }
+      });
+      res.json(attr);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -484,7 +525,6 @@ async function startServer() {
     
     try {
       const fileContent = fs.readFileSync(req.file.path, 'utf-8');
-      // Tentativo di rilevare il delimitatore guardando la prima riga
       let delimiter = ',';
       const firstLine = fileContent.split('\n')[0];
       if (firstLine.includes(';')) delimiter = ';';
@@ -494,63 +534,75 @@ async function startServer() {
         skip_empty_lines: true,
         delimiter: delimiter,
         trim: true,
-        bom: true // Supporta file Excel con BOM
+        bom: true
       });
       
       let importedCount = 0;
 
       for (const row of records) {
+        const name = row.name_it || row.name || row.Name;
+        if (!name) continue;
+        const slug = row.slug || slugify(name, { lower: true });
+
         if (row.type === 'product') {
-          const slug = row.slug || slugify(row.name_it, { lower: true });
-          
-          // Lookup brandId and categoryId if names are provided
           let brandId = null;
           let categoryId = null;
 
           if (row.brandName) {
-            const brand = db.prepare('SELECT id FROM brands WHERE name_it = ? OR slug = ?').get(row.brandName, slugify(row.brandName, { lower: true }));
-            if (brand) brandId = (brand as any).id;
+            const brand = await prisma.brand.findFirst({
+              where: { OR: [{ name_it: row.brandName }, { slug: slugify(row.brandName, { lower: true }) }] }
+            });
+            if (brand) brandId = brand.id;
           }
 
           if (row.categoryName) {
-            const cat = db.prepare('SELECT id FROM categories WHERE name_it = ? OR slug = ?').get(row.categoryName, slugify(row.categoryName, { lower: true }));
-            if (cat) categoryId = (cat as any).id;
+            const cat = await prisma.category.findFirst({
+              where: { OR: [{ name_it: row.categoryName }, { slug: slugify(row.categoryName, { lower: true }) }] }
+            });
+            if (cat) categoryId = cat.id;
           }
 
-          const stmt = db.prepare('INSERT OR IGNORE INTO products (name_it, slug, description_it, price, brandId, categoryId) VALUES (?, ?, ?, ?, ?, ?)');
-          const info = stmt.run(row.name_it, slug, row.description_it, parseFloat(row.price) || 0, brandId, categoryId);
+          const product = await prisma.product.upsert({
+            where: { slug },
+            update: {},
+            create: {
+              name_it: name,
+              slug,
+              description_it: row.description_it || '',
+              price: parseFloat(row.price) || 0,
+              brandId,
+              categoryId,
+              visibility: true
+            }
+          });
           
-          if (info.changes > 0) {
-            importedCount++;
-            if (row.imageUrls) {
-              const pId = info.lastInsertRowid;
-              const urls = row.imageUrls.split(',');
-              const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
-              for (let url of urls) {
-                url = url.trim();
-                try {
-                  const imgRes = await axios.get(url, { responseType: 'arraybuffer' });
-                  const fileName = `${Date.now()}-${Math.round(Math.random()*1000)}.jpg`;
-                  const destPath = path.join(uploadDirs.products, fileName);
-                  await sharp(imgRes.data).toFile(destPath);
-                  insertImg.run(pId, `/uploads/products/${fileName}`);
-                } catch (err) {
-                  console.error('Errore download immagine prodotto:', url);
-                }
+          importedCount++;
+
+          if (row.imageUrls) {
+            const urls = row.imageUrls.split(',');
+            for (let url of urls) {
+              url = url.trim();
+              try {
+                const imgRes = await axios.get(url, { responseType: 'arraybuffer' });
+                const fileName = `${Date.now()}-${Math.round(Math.random()*1000)}.jpg`;
+                const destPath = path.join(uploadDirs.products, fileName);
+                await sharp(imgRes.data).toFile(destPath);
+                
+                await prisma.productImage.create({
+                  data: {
+                    productId: product.id,
+                    imageUrl: `/uploads/products/${fileName}`
+                  }
+                });
+              } catch (err) {
+                console.error('Errore download immagine prodotto:', url);
               }
             }
           }
         } else if (row.type === 'brand') {
-          const name = row.name_it || row.name || row.Name;
-          if (!name) {
-            console.log('Skipping brand import: name missing', row);
-            continue;
-          }
-          const slug = row.slug || slugify(name, { lower: true });
           let logoPath = '';
-
-          if (row.logoUrl || row.logo) {
-            const url = (row.logoUrl || row.logo).trim();
+          const url = (row.logoUrl || row.logo)?.trim();
+          if (url) {
             try {
               const imgRes = await axios.get(url, { responseType: 'arraybuffer' });
               const fileName = `${Date.now()}-brand-${Math.round(Math.random()*1000)}.jpg`;
@@ -564,28 +616,23 @@ async function startServer() {
             }
           }
 
-          const description = row.description_it || row.description || row.Description || '';
-          const website = row.website || row.Website || '';
-
-          const stmt = db.prepare('INSERT OR IGNORE INTO brands (name_it, slug, description_it, website, logo, visibility) VALUES (?, ?, ?, ?, ?, 1)');
-          const info = stmt.run(name, slug, description, website, logoPath);
-          if (info.changes > 0) {
-            importedCount++;
-            console.log(`Brand imported: ${name} (slug: ${slug})`);
-          } else {
-            console.warn(`Brand skipped (likely duplicate slug or name): ${name} (slug: ${slug})`);
-          }
+          await prisma.brand.upsert({
+            where: { slug },
+            update: {},
+            create: {
+              name_it: name,
+              slug,
+              description_it: row.description_it || '',
+              website: row.website || row.Website || '',
+              logo: logoPath,
+              visibility: true
+            }
+          });
+          importedCount++;
         } else if (row.type === 'category') {
-          const name = row.name_it || row.name || row.Name;
-          if (!name) {
-            console.log('Skipping category import: name missing', row);
-            continue;
-          }
-          const slug = row.slug || slugify(name, { lower: true });
           let imgPath = '';
-
-          if (row.imageUrl || row.image) {
-            const url = (row.imageUrl || row.image).trim();
+          const url = (row.imageUrl || row.image)?.trim();
+          if (url) {
             try {
               const imgRes = await axios.get(url, { responseType: 'arraybuffer' });
               const fileName = `${Date.now()}-cat-${Math.round(Math.random()*1000)}.jpg`;
@@ -593,13 +640,21 @@ async function startServer() {
               await sharp(imgRes.data).toFile(destPath);
               imgPath = `/uploads/categories/${fileName}`;
             } catch (err) {
-              console.error('Errore download immagine categoria:', row.imageUrl);
+              console.error('Errore download immagine categoria:', url);
             }
           }
 
-          const stmt = db.prepare('INSERT OR IGNORE INTO categories (name_it, slug, description_it, image) VALUES (?, ?, ?, ?, ?)');
-          const info = stmt.run(row.name_it, slug, row.description_it, imgPath);
-          if (info.changes > 0) importedCount++;
+          await prisma.category.upsert({
+            where: { slug },
+            update: {},
+            create: {
+              name_it: name,
+              slug,
+              description_it: row.description_it || '',
+              image: imgPath
+            }
+          });
+          importedCount++;
         }
       }
       

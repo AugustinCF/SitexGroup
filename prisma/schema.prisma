@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./tpc_group.db"
+}
+
+model Brand {
+  id                 Int       @id @default(autoincrement())
+  name_it            String?
+  name_en            String?
+  name_es            String?
+  name_de            String?
+  name_fr            String?
+  slug               String    @unique
+  description_it     String?
+  description_en     String?
+  description_es     String?
+  description_de     String?
+  description_fr     String?
+  logo               String?
+  website            String?
+  visibility         Boolean   @default(true)
+  meta_title_it      String?
+  meta_title_en      String?
+  meta_title_es      String?
+  meta_title_de      String?
+  meta_title_fr      String?
+  meta_description_it String?
+  meta_description_en String?
+  meta_description_es String?
+  meta_description_de String?
+  meta_description_fr String?
+  createdAt          DateTime  @default(now())
+  products           Product[]
+}
+
+model Category {
+  id                 Int       @id @default(autoincrement())
+  name_it            String?
+  name_en            String?
+  name_es            String?
+  name_de            String?
+  name_fr            String?
+  slug               String    @unique
+  description_it     String?
+  description_en     String?
+  description_es     String?
+  description_de     String?
+  description_fr     String?
+  image              String?
+  meta_title_it      String?
+  meta_title_en      String?
+  meta_title_es      String?
+  meta_title_de      String?
+  meta_title_fr      String?
+  meta_description_it String?
+  meta_description_en String?
+  meta_description_es String?
+  meta_description_de String?
+  meta_description_fr String?
+  createdAt          DateTime  @default(now())
+  products           Product[]
+}
+
+model Product {
+  id                 Int            @id @default(autoincrement())
+  name_it            String?
+  name_en            String?
+  name_es            String?
+  name_de            String?
+  name_fr            String?
+  slug               String         @unique
+  description_it     String?
+  description_en     String?
+  description_es     String?
+  description_de     String?
+  description_fr     String?
+  visibility         Boolean        @default(true)
+  brandId            Int?
+  brand              Brand?         @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  categoryId         Int?
+  category           Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  price              Float?
+  meta_title_it      String?
+  meta_title_en      String?
+  meta_title_es      String?
+  meta_title_de      String?
+  meta_title_fr      String?
+  meta_description_it String?
+  meta_description_en String?
+  meta_description_es String?
+  meta_description_de String?
+  meta_description_fr String?
+  createdAt          DateTime       @default(now())
+  images             ProductImage[]
+  attributes         Attribute[]
+}
+
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  imageUrl  String
+}
+
+model Attribute {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name_it   String
+  name_en   String?
+  name_es   String?
+  name_de   String?
+  name_fr   String?
+  value_it  String
+  value_en  String?
+  value_es  String?
+  value_de  String?
+  value_fr  String?
+  order     Int     @default(0)
+}

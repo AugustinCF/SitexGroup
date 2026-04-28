@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../lib/LanguageContext';
-import { Plus, Trash2, Edit, Save, X, Globe, Eye, EyeOff, Euro, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, X, Globe, Eye, EyeOff, Euro, Image as ImageIcon, ListTree } from 'lucide-react';
 
 export const AdminProducts = () => {
   const { lang } = useLanguage();
@@ -10,6 +10,8 @@ export const AdminProducts = () => {
   const [isEditing, setIsEditing] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
   const [imageFiles, setImageFiles] = useState<FileList | null>(null);
+  const [attributes, setAttributes] = useState<any[]>([]);
+  const [newAttr, setNewAttr] = useState({ name_it: '', name_en: '', value_it: '', value_en: '', order: 0 });
 
   const fetchAll = async () => {
     const [pRes, bRes, cRes] = await Promise.all([
@@ -22,6 +24,11 @@ export const AdminProducts = () => {
     setCategories(await cRes.json());
   };
 
+  const fetchAttributes = async (productId: number) => {
+    const res = await fetch(`/api/products/${productId}/attributes`);
+    if (res.ok) setAttributes(await res.json());
+  };
+
   useEffect(() => {
     fetchAll();
   }, []);
@@ -30,14 +37,19 @@ export const AdminProducts = () => {
     setIsEditing(null);
     setFormData({});
     setImageFiles(null);
+    setAttributes([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = new FormData();
     Object.keys(formData).forEach(key => {
-      if (formData[key] !== null) data.append(key, formData[key]);
+      // Don't send relation arrays or nulls
+      if (formData[key] !== null && typeof formData[key] !== 'object') {
+        data.append(key, formData[key]);
+      }
     });
+
     if (imageFiles) {
       for (let i = 0; i < imageFiles.length; i++) {
         data.append('images', imageFiles[i]);
@@ -58,6 +70,24 @@ export const AdminProducts = () => {
     if (!confirm('Eliminare questo prodotto?')) return;
     await fetch(`/api/products/${id}`, { method: 'DELETE' });
     fetchAll();
+  };
+
+  const handleAddAttribute = async () => {
+    if (!isEditing) return;
+    const res = await fetch(`/api/products/${isEditing.id}/attributes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newAttr)
+    });
+    if (res.ok) {
+      setNewAttr({ name_it: '', name_en: '', value_it: '', value_en: '', order: attributes.length + 1 });
+      fetchAttributes(isEditing.id);
+    }
+  };
+
+  const handleDeleteAttribute = async (id: number) => {
+    const res = await fetch(`/api/attributes/${id}`, { method: 'DELETE' });
+    if (res.ok && isEditing) fetchAttributes(isEditing.id);
   };
 
   const languages = ['it', 'en', 'es', 'de', 'fr'];
@@ -195,6 +225,102 @@ export const AdminProducts = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 gap-6 pt-6 border-t border-slate-100">
+              <div className="space-y-4">
+                <span className="text-sm font-bold text-brand-900 block uppercase tracking-widest flex items-center gap-2">
+                  <ListTree size={18} /> Attributi Tecnici
+                </span>
+                
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+                          <tr>
+                            <th className="p-3">Nome (IT/EN)</th>
+                            <th className="p-3">Valore (IT/EN)</th>
+                            <th className="p-3">Ordine</th>
+                            <th className="p-3">Azioni</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {attributes.map(attr => (
+                            <tr key={attr.id} className="hover:bg-slate-50/50">
+                              <td className="p-3 font-medium">
+                                <div>{attr.name_it}</div>
+                                <div className="text-slate-400 text-[10px] italic">{attr.name_en}</div>
+                              </td>
+                              <td className="p-3">
+                                <div>{attr.value_it}</div>
+                                <div className="text-slate-400 text-[10px] italic">{attr.value_en}</div>
+                              </td>
+                              <td className="p-3 text-slate-500">{attr.order}</td>
+                              <td className="p-3">
+                                <button type="button" onClick={() => handleDeleteAttribute(attr.id)} className="text-red-400 hover:text-red-600">
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="bg-slate-50 p-4 rounded-xl grid grid-cols-1 md:grid-cols-5 gap-3 items-end border border-slate-100">
+                      <div className="space-y-1 col-span-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Nome IT/EN</label>
+                        <input 
+                          placeholder="es. Peso"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
+                          value={newAttr.name_it}
+                          onChange={e => setNewAttr({...newAttr, name_it: e.target.value})}
+                        />
+                        <input 
+                          placeholder="es. Weight"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
+                          value={newAttr.name_en}
+                          onChange={e => setNewAttr({...newAttr, name_en: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-1 col-span-2">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Valore IT/EN</label>
+                        <input 
+                          placeholder="es. 10kg"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
+                          value={newAttr.value_it}
+                          onChange={e => setNewAttr({...newAttr, value_it: e.target.value})}
+                        />
+                        <input 
+                          placeholder="es. 10kg"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
+                          value={newAttr.value_en}
+                          onChange={e => setNewAttr({...newAttr, value_en: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Ordine</label>
+                        <input 
+                          type="number"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
+                          value={newAttr.order}
+                          onChange={e => setNewAttr({...newAttr, order: parseInt(e.target.value) || 0})}
+                        />
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={handleAddAttribute}
+                        className="py-2.5 bg-brand-900 text-white font-bold rounded-lg hover:bg-brand-800 transition-all text-xs"
+                      >
+                        Aggiungi
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">Salva il prodotto per poter aggiungere attributi tecnici.</p>
+                )}
+              </div>
+            </div>
+
             <div className="flex gap-4">
               <button type="submit" className="flex-1 py-3 bg-brand-900 text-white font-bold rounded-xl hover:bg-brand-800 transition-all flex items-center justify-center gap-2">
                 <Save size={20} /> Salva Prodotto
@@ -244,6 +370,7 @@ export const AdminProducts = () => {
                         ...product,
                         visibility: product.visibility ? 'true' : 'false'
                       });
+                      fetchAttributes(product.id);
                     }}
                     className="p-2 text-slate-400 hover:text-gold transition-colors"
                   >

@@ -138,6 +138,25 @@ export const ProductDetailPage = () => {
               </p>
             </div>
 
+            {product.attributes && product.attributes.length > 0 && (
+              <div className="mb-12">
+                <h3 className="text-lg font-bold text-brand-900 mb-4 italic flex items-center gap-2">
+                  <Package size={20} className="text-gold" /> Specifiche Tecniche
+                </h3>
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                  {product.attributes.map((attr: any, idx: number) => (
+                    <div 
+                      key={attr.id} 
+                      className={`grid grid-cols-2 p-4 text-sm ${idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} ${idx !== product.attributes.length - 1 ? 'border-b border-slate-100' : ''}`}
+                    >
+                      <div className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">{t(attr, 'name')}</div>
+                      <div className="text-brand-900 font-medium">{t(attr, 'value')}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mt-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
               <a 
                 href="tel:+39061234567"
