@@ -25,6 +25,7 @@ import {
   ABOUT_US 
 } from './constants';
 import { AssistancePage } from './pages/Assistance';
+import ScrollToTop from './components/ScrollToTop';
 import { WeldingPage } from './pages/Welding';
 import { CompressorsPage } from './pages/Compressors';
 import { BrandsPage } from './pages/Brands';
@@ -447,6 +448,7 @@ const HomePage = () => {
 export default function App() {
   return (
     <Router>
+      <ScrollToTop />
       <div className="min-h-screen">
         <Navbar />
         
