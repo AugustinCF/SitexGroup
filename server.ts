@@ -486,36 +486,94 @@ async function startServer() {
       const fileContent = fs.readFileSync(req.file.path, 'utf-8');
       const records: any[] = parse(fileContent, { columns: true, skip_empty_lines: true });
       
+      let importedCount = 0;
+
       for (const row of records) {
-        // Logica semplificata di import: se esiste slug salta o aggiorna
-        // Row potrebbe contenere: type (product/brand/category), name_it, slug, description_it, imageUrls (comma separated)
         if (row.type === 'product') {
           const slug = row.slug || slugify(row.name_it, { lower: true });
-          const stmt = db.prepare('INSERT OR IGNORE INTO products (name_it, slug, description_it, price) VALUES (?, ?, ?, ?)');
-          const info = stmt.run(row.name_it, slug, row.description_it, parseFloat(row.price) || 0);
           
-          if (info.changes > 0 && row.imageUrls) {
-            const pId = info.lastInsertRowid;
-            const urls = row.imageUrls.split(',');
-            const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
-            for (let url of urls) {
-              url = url.trim();
-              try {
-                const imgRes = await axios.get(url, { responseType: 'arraybuffer' });
-                const fileName = `${Date.now()}-${Math.round(Math.random()*1000)}.jpg`;
-                const destPath = path.join(uploadDirs.products, fileName);
-                await sharp(imgRes.data).toFile(destPath);
-                insertImg.run(pId, `/uploads/products/${fileName}`);
-              } catch (err) {
-                console.error('Errore download immagine:', url);
+          // Lookup brandId and categoryId if names are provided
+          let brandId = null;
+          let categoryId = null;
+
+          if (row.brandName) {
+            const brand = db.prepare('SELECT id FROM brands WHERE name_it = ? OR slug = ?').get(row.brandName, slugify(row.brandName, { lower: true }));
+            if (brand) brandId = (brand as any).id;
+          }
+
+          if (row.categoryName) {
+            const cat = db.prepare('SELECT id FROM categories WHERE name_it = ? OR slug = ?').get(row.categoryName, slugify(row.categoryName, { lower: true }));
+            if (cat) categoryId = (cat as any).id;
+          }
+
+          const stmt = db.prepare('INSERT OR IGNORE INTO products (name_it, slug, description_it, price, brandId, categoryId) VALUES (?, ?, ?, ?, ?, ?)');
+          const info = stmt.run(row.name_it, slug, row.description_it, parseFloat(row.price) || 0, brandId, categoryId);
+          
+          if (info.changes > 0) {
+            importedCount++;
+            if (row.imageUrls) {
+              const pId = info.lastInsertRowid;
+              const urls = row.imageUrls.split(',');
+              const insertImg = db.prepare('INSERT INTO product_images (productId, imageUrl) VALUES (?, ?)');
+              for (let url of urls) {
+                url = url.trim();
+                try {
+                  const imgRes = await axios.get(url, { responseType: 'arraybuffer' });
+                  const fileName = `${Date.now()}-${Math.round(Math.random()*1000)}.jpg`;
+                  const destPath = path.join(uploadDirs.products, fileName);
+                  await sharp(imgRes.data).toFile(destPath);
+                  insertImg.run(pId, `/uploads/products/${fileName}`);
+                } catch (err) {
+                  console.error('Errore download immagine prodotto:', url);
+                }
               }
             }
           }
+        } else if (row.type === 'brand') {
+          const slug = row.slug || slugify(row.name_it, { lower: true });
+          let logoPath = '';
+
+          if (row.logoUrl) {
+            try {
+              const imgRes = await axios.get(row.logoUrl.trim(), { responseType: 'arraybuffer' });
+              const fileName = `${Date.now()}-brand-${Math.round(Math.random()*1000)}.jpg`;
+              const destPath = path.join(uploadDirs.logos, fileName);
+              await sharp(imgRes.data)
+                .resize(800, 600, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+                .toFile(destPath);
+              logoPath = `/uploads/logos/${fileName}`;
+            } catch (err) {
+              console.error('Errore download logo brand:', row.logoUrl);
+            }
+          }
+
+          const stmt = db.prepare('INSERT OR IGNORE INTO brands (name_it, slug, description_it, website, logo) VALUES (?, ?, ?, ?, ?)');
+          const info = stmt.run(row.name_it, slug, row.description_it, row.website || '', logoPath);
+          if (info.changes > 0) importedCount++;
+        } else if (row.type === 'category') {
+          const slug = row.slug || slugify(row.name_it, { lower: true });
+          let imgPath = '';
+
+          if (row.imageUrl) {
+            try {
+              const imgRes = await axios.get(row.imageUrl.trim(), { responseType: 'arraybuffer' });
+              const fileName = `${Date.now()}-cat-${Math.round(Math.random()*1000)}.jpg`;
+              const destPath = path.join(uploadDirs.categories, fileName);
+              await sharp(imgRes.data).toFile(destPath);
+              imgPath = `/uploads/categories/${fileName}`;
+            } catch (err) {
+              console.error('Errore download immagine categoria:', row.imageUrl);
+            }
+          }
+
+          const stmt = db.prepare('INSERT OR IGNORE INTO categories (name_it, slug, description_it, image) VALUES (?, ?, ?, ?, ?)');
+          const info = stmt.run(row.name_it, slug, row.description_it, imgPath);
+          if (info.changes > 0) importedCount++;
         }
       }
       
       fs.unlinkSync(req.file.path);
-      res.json({ success: true, count: records.length });
+      res.json({ success: true, count: importedCount, total: records.length });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

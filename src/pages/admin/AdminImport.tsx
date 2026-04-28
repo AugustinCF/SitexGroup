@@ -84,23 +84,58 @@ export const AdminImport = () => {
           <div>
             <h4 className="font-bold">{result.error ? 'Errore' : 'Successo!'}</h4>
             <p className="text-sm">
-              {result.error || `Importazione completata: ${result.count} record elaborati.`}
+              {result.error || `Importazione completata: ${result.count} nuovi record aggiunti su ${result.total} totali.`}
             </p>
           </div>
         </div>
       )}
 
-      <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100">
-        <h4 className="font-bold mb-4 italic">Formato CSV Richiesto:</h4>
-        <p className="text-xs text-slate-500 mb-4">
-          La prima riga deve contenere gli header. Colonne supportate:
-        </p>
-        <code className="block p-4 bg-slate-900 text-gold rounded-lg text-[10px] overflow-x-auto whitespace-nowrap">
-          type,name_it,slug,description_it,price,imageUrls
-        </code>
-        <p className="text-[10px] text-slate-400 mt-4">
-          * imageUrls: una lista di URL separati da virgola. Il sistema scaricherà e salverà le foto localmente.
-        </p>
+      <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100 space-y-8">
+        <div>
+          <h4 className="font-bold mb-4 italic text-brand-900 border-l-4 border-gold pl-4">Formato CSV Richiesto:</h4>
+          <p className="text-sm text-slate-500 mb-4">
+            La prima riga deve contenere gli header. La colonna <code className="text-gold font-bold">type</code> determina l'entità.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-white p-6 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-1 bg-brand-900 text-white text-[10px] font-bold rounded uppercase tracking-widest">Type: product</span>
+            </div>
+            <code className="block p-4 bg-slate-900 text-gold rounded-lg text-[10px] overflow-x-auto whitespace-nowrap mb-2">
+              type,name_it,slug,description_it,price,imageUrls,brandName,categoryName
+            </code>
+            <ul className="text-[10px] text-slate-400 space-y-1 mt-2">
+              <li>* imageUrls: lista di URL separati da virgola.</li>
+              <li>* brandName / categoryName: verranno collegati automaticamente se esistono (per nome o slug).</li>
+            </ul>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-1 bg-brand-900 text-white text-[10px] font-bold rounded uppercase tracking-widest">Type: brand</span>
+            </div>
+            <code className="block p-4 bg-slate-900 text-gold rounded-lg text-[10px] overflow-x-auto whitespace-nowrap mb-2">
+              type,name_it,slug,description_it,website,logoUrl
+            </code>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-1 bg-brand-900 text-white text-[10px] font-bold rounded uppercase tracking-widest">Type: category</span>
+            </div>
+            <code className="block p-4 bg-slate-900 text-gold rounded-lg text-[10px] overflow-x-auto whitespace-nowrap mb-2">
+              type,name_it,slug,description_it,imageUrl
+            </code>
+          </div>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-slate-200">
+          <p className="text-[10px] text-slate-400">
+            * Se lo <code className="text-brand-900 font-bold">slug</code> è già presente nel database, il record verrà saltato (INSERT IGNORE).
+          </p>
+        </div>
       </div>
     </div>
   );
