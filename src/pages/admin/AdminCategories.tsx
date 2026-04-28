@@ -55,7 +55,7 @@ export const AdminCategories = () => {
         <h1 className="text-3xl font-bold">Gestione Categorie</h1>
         {!isEditing && Object.keys(formData).length === 0 && (
           <button 
-            onClick={() => setFormData({})}
+            onClick={() => setFormData({ name_it: '' })}
             className="flex items-center gap-2 px-6 py-3 bg-gold text-white font-bold rounded-xl"
           >
             <Plus size={20} /> Nuova Categoria
