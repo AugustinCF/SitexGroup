@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Tag, Layers, Package, LogOut, Globe, Plus } from 'lucide-react';
+import { LayoutDashboard, Tag, Layers, Package, LogOut, Globe, Plus, ListTree } from 'lucide-react';
 
 export const AdminLayout = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -61,6 +61,12 @@ export const AdminLayout = () => {
             className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-gold text-white' : 'hover:bg-white/10 text-slate-400'}`}
           >
             <Package size={20} /> Prodotti
+          </NavLink>
+          <NavLink 
+            to="/admin/attributes" 
+            className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-gold text-white' : 'hover:bg-white/10 text-slate-400'}`}
+          >
+            <ListTree size={20} /> Attributi
           </NavLink>
           <NavLink 
             to="/admin/import" 

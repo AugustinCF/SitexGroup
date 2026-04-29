@@ -449,6 +449,22 @@ async function startServer() {
   });
 
   // --- ATTRIBUTES CRUD ---
+  app.get('/api/attributes', async (req, res) => {
+    try {
+      const attrs = await prisma.attribute.findMany({
+        include: {
+          product: {
+            select: { name_it: true, id: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      res.json(attrs);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get('/api/products/:productId/attributes', async (req, res) => {
     try {
       const attrs = await prisma.attribute.findMany({
@@ -512,11 +528,29 @@ async function startServer() {
     }
   });
 
-  app.get('/api/products/by-slug/:slug', (req, res) => {
-    const product: any = db.prepare('SELECT * FROM products WHERE slug = ?').get(req.params.slug);
-    if (!product) return res.status(404).json({ error: 'Not found' });
-    const images: any = db.prepare('SELECT imageUrl FROM product_images WHERE productId = ?').all(product.id);
-    res.json({ ...product, images: images.map((img: any) => img.imageUrl) });
+  app.get('/api/products/by-slug/:slug', async (req, res) => {
+    try {
+      const product = await prisma.product.findUnique({
+        where: { slug: req.params.slug },
+        include: {
+          images: true,
+          brand: true,
+          category: true,
+          attributes: {
+            orderBy: { order: 'asc' }
+          }
+        }
+      });
+      if (!product) return res.status(404).json({ error: 'Not found' });
+      res.json({ 
+        ...product, 
+        images: product.images.map((img: any) => img.imageUrl),
+        brandName: product.brand?.name_it,
+        categoryName: product.category?.name_it
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // --- BULK IMPORT ---

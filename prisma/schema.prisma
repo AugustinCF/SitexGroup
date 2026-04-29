@@ -121,4 +121,5 @@ model Attribute {
   value_de  String?
   value_fr  String?
   order     Int     @default(0)
+  createdAt DateTime @default(now())
 }

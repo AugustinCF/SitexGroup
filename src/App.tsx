@@ -36,6 +36,7 @@ import { AdminLayout } from './pages/AdminLayout';
 import { AdminBrands } from './pages/admin/AdminBrands';
 import { AdminCategories } from './pages/admin/AdminCategories';
 import { AdminProducts } from './pages/admin/AdminProducts';
+import { AdminAttributes } from './pages/admin/AdminAttributes';
 import { AdminImport } from './pages/admin/AdminImport';
 import { BrandDetailPage } from './pages/BrandDetail';
 import { CategoryDetailPage } from './pages/CategoryDetail';
@@ -469,6 +470,7 @@ export default function App() {
             <Route path="brands" element={<AdminBrands />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="products" element={<AdminProducts />} />
+            <Route path="attributes" element={<AdminAttributes />} />
             <Route path="import" element={<AdminImport />} />
           </Route>
         </Routes>
