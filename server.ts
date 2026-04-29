@@ -64,13 +64,14 @@ async function startServer() {
   app.use(session({
     secret: 'tpc-group-secret-key-v2',
     resave: true,
-    saveUninitialized: false,
-    name: 'sid', // Specific name for the cookie
+    saveUninitialized: true,
+    name: 'sid',
+    proxy: true, // Required for secure cookies behind a proxy
     cookie: { 
-      // Important for VPS behind proxy
       secure: process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true',
       sameSite: process.env.USE_HTTPS === 'true' ? 'none' : 'lax', 
-      maxAge: 24 * 60 * 60 * 1000 
+      maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true
     }
   }));
 
@@ -122,13 +123,14 @@ async function startServer() {
   // but to keep the edit clean I'll target the Products section.
   app.get('/api/brands', async (req, res) => {
     try {
+      console.log('[API] Fetching brands...');
       const brands = await prisma.brand.findMany({
         orderBy: { name_it: 'asc' }
       });
       res.json(brands);
     } catch (e: any) {
       console.error(`[API ERROR - GET BRANDS]`, e);
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: e.message, details: e.stack });
     }
   });
 
@@ -230,13 +232,14 @@ async function startServer() {
   // --- CATEGORIES CRUD ---
   app.get('/api/categories', async (req, res) => {
     try {
+      console.log('[API] Fetching categories...');
       const cats = await prisma.category.findMany({
         orderBy: { name_it: 'asc' }
       });
       res.json(cats);
     } catch (e: any) {
       console.error(`[API ERROR - GET CATEGORIES]`, e);
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: e.message, details: e.stack });
     }
   });
 
@@ -332,6 +335,7 @@ async function startServer() {
   // --- PRODUCTS CRUD ---
   app.get('/api/products', async (req, res) => {
     try {
+      console.log('[API] Fetching products...');
       const products = await prisma.product.findMany({
         include: {
           brand: true,
@@ -353,7 +357,7 @@ async function startServer() {
       res.json(results);
     } catch (e: any) {
       console.error(`[API ERROR - GET PRODUCTS]`, e);
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: e.message, details: e.stack });
     }
   });
 
@@ -478,12 +482,14 @@ async function startServer() {
   // --- ATTRIBUTE DEFINITIONS CRUD ---
   app.get('/api/attribute-definitions', async (req, res) => {
     try {
+      console.log('[API] Fetching attribute definitions...');
       const defs = await prisma.attributeDefinition.findMany({
         orderBy: { name_it: 'asc' }
       });
       res.json(defs);
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      console.error(`[API ERROR - GET ATTRIBUTE-DEFINITIONS]`, e);
+      res.status(500).json({ error: e.message, details: e.stack });
     }
   });
 
