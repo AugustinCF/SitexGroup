@@ -47,17 +47,29 @@ async function startServer() {
   const app = express();
   const PORT = parseInt(process.env.PORT || '3000', 10);
   
-  app.set('trust proxy', 1);
+  app.set('trust proxy', 1); // Trust first proxy (Nginx)
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  
+  // Logging middleware
+  app.use((req, res, next) => {
+    if (req.url.startsWith('/api')) {
+      console.log(`[API ${new Date().toISOString()}] ${req.method} ${req.url}`);
+    }
+    next();
+  });
+
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
   app.use(session({
     secret: 'tpc-group-secret-key-v2',
-    resave: false,
+    resave: true,
     saveUninitialized: false,
+    name: 'sid', // Specific name for the cookie
     cookie: { 
-      secure: process.env.NODE_ENV === 'production' && !process.env.IS_LOCAL,
+      // Important for VPS behind proxy
+      secure: process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true',
+      sameSite: process.env.USE_HTTPS === 'true' ? 'none' : 'lax', 
       maxAge: 24 * 60 * 60 * 1000 
     }
   }));
@@ -67,6 +79,7 @@ async function startServer() {
     if (req.session && req.session.isAdmin) {
       next();
     } else {
+      console.log(`[AUTH] Unauthorized access attempt to ${req.url}. Session ID: ${req.sessionID}, isAdmin: ${req.session?.isAdmin}`);
       res.status(401).json({ error: 'Unauthorized' });
     }
   };
@@ -75,10 +88,21 @@ async function startServer() {
   app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    
+    console.log(`[LOGIN ATTEMPT] Provided: "${password}", Expected: "${adminPassword}"`);
+
     if (password === adminPassword) {
       (req.session as any).isAdmin = true;
-      res.json({ success: true });
+      req.session.save((err) => {
+        if (err) {
+          console.error('[SESSION SAVE ERROR]', err);
+          return res.status(500).json({ success: false, message: 'Errore sessione' });
+        }
+        console.log('[LOGIN SUCCESS] Session saved for user');
+        res.json({ success: true });
+      });
     } else {
+      console.log('[LOGIN FAILED] Incorrect password');
       res.status(401).json({ success: false, message: 'Password errata' });
     }
   });
@@ -103,6 +127,7 @@ async function startServer() {
       });
       res.json(brands);
     } catch (e: any) {
+      console.error(`[API ERROR - GET BRANDS]`, e);
       res.status(500).json({ error: e.message });
     }
   });
@@ -210,6 +235,7 @@ async function startServer() {
       });
       res.json(cats);
     } catch (e: any) {
+      console.error(`[API ERROR - GET CATEGORIES]`, e);
       res.status(500).json({ error: e.message });
     }
   });
@@ -326,6 +352,7 @@ async function startServer() {
       }));
       res.json(results);
     } catch (e: any) {
+      console.error(`[API ERROR - GET PRODUCTS]`, e);
       res.status(500).json({ error: e.message });
     }
   });

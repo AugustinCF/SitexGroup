@@ -10,9 +10,21 @@ export const AdminCategories = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   const fetchCategories = async () => {
-    const res = await fetch('/api/categories');
-    const data = await res.json();
-    setCategories(data);
+    try {
+      const res = await fetch('/api/categories');
+      if (!res.ok) {
+        console.error('Server error colors:', res.status, res.statusText);
+        const text = await res.text();
+        if (text.startsWith('<!doctype')) {
+          console.error('The server returned HTML instead of JSON. Check if the API route exists on the VPS.');
+        }
+        return;
+      }
+      const data = await res.json();
+      setCategories(data);
+    } catch (err) {
+      console.error('Fetch error:', err);
+    }
   };
 
   useEffect(() => {

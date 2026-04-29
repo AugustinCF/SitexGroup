@@ -15,16 +15,25 @@ export const AdminProducts = () => {
   const [newAttr, setNewAttr] = useState({ attributeDefinitionId: '', value_it: '', value_en: '', order: 0 });
 
   const fetchAll = async () => {
-    const [pRes, bRes, cRes, dRes] = await Promise.all([
-      fetch('/api/products'),
-      fetch('/api/brands'),
-      fetch('/api/categories'),
-      fetch('/api/attribute-definitions')
-    ]);
-    setProducts(await pRes.json());
-    setBrands(await bRes.json());
-    setCategories(await cRes.json());
-    setAttributeDefinitions(await dRes.json());
+    try {
+      const [pRes, bRes, cRes, dRes] = await Promise.all([
+        fetch('/api/products'),
+        fetch('/api/brands'),
+        fetch('/api/categories'),
+        fetch('/api/attribute-definitions')
+      ]);
+
+      if (pRes.ok) setProducts(await pRes.json());
+      if (bRes.ok) setBrands(await bRes.json());
+      if (cRes.ok) setCategories(await cRes.json());
+      if (dRes.ok) setAttributeDefinitions(await dRes.json());
+      
+      if (!pRes.ok || !bRes.ok || !cRes.ok || !dRes.ok) {
+        console.error('Some APIs failed to load');
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+    }
   };
 
   const fetchAttributes = async (productId: number) => {
