@@ -448,11 +448,72 @@ async function startServer() {
     }
   });
 
+  // --- ATTRIBUTE DEFINITIONS CRUD ---
+  app.get('/api/attribute-definitions', async (req, res) => {
+    try {
+      const defs = await prisma.attributeDefinition.findMany({
+        orderBy: { name_it: 'asc' }
+      });
+      res.json(defs);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/attribute-definitions', isAdmin, async (req, res) => {
+    try {
+      const data = req.body;
+      const def = await prisma.attributeDefinition.create({
+        data: {
+          name_it: data.name_it,
+          name_en: data.name_en,
+          name_es: data.name_es,
+          name_de: data.name_de,
+          name_fr: data.name_fr,
+        }
+      });
+      res.json(def);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put('/api/attribute-definitions/:id', isAdmin, async (req, res) => {
+    try {
+      const data = req.body;
+      const def = await prisma.attributeDefinition.update({
+        where: { id: parseInt(req.params.id) },
+        data: {
+          name_it: data.name_it,
+          name_en: data.name_en,
+          name_es: data.name_es,
+          name_de: data.name_de,
+          name_fr: data.name_fr,
+        }
+      });
+      res.json(def);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/attribute-definitions/:id', isAdmin, async (req, res) => {
+    try {
+      await prisma.attributeDefinition.delete({
+        where: { id: parseInt(req.params.id) }
+      });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // --- ATTRIBUTES CRUD ---
   app.get('/api/attributes', async (req, res) => {
     try {
       const attrs = await prisma.attribute.findMany({
         include: {
+          definition: true,
           product: {
             select: { name_it: true, id: true }
           }
@@ -469,6 +530,7 @@ async function startServer() {
     try {
       const attrs = await prisma.attribute.findMany({
         where: { productId: parseInt(req.params.productId) },
+        include: { definition: true },
         orderBy: { order: 'asc' }
       });
       res.json(attrs);
@@ -485,12 +547,12 @@ async function startServer() {
       const attr = await prisma.attribute.create({
         data: {
           productId,
-          name_it: data.name_it,
-          name_en: data.name_en,
+          attributeDefinitionId: parseInt(data.attributeDefinitionId),
           value_it: data.value_it,
           value_en: data.value_en,
           order: parseInt(data.order) || 0
-        }
+        },
+        include: { definition: true }
       });
       res.json(attr);
     } catch (e: any) {
@@ -515,12 +577,12 @@ async function startServer() {
       const attr = await prisma.attribute.update({
         where: { id: parseInt(req.params.id) },
         data: {
-          name_it: data.name_it,
-          name_en: data.name_en,
+          attributeDefinitionId: parseInt(data.attributeDefinitionId),
           value_it: data.value_it,
           value_en: data.value_en,
           order: parseInt(data.order) || 0
-        }
+        },
+        include: { definition: true }
       });
       res.json(attr);
     } catch (e: any) {
@@ -537,6 +599,7 @@ async function startServer() {
           brand: true,
           category: true,
           attributes: {
+            include: { definition: true },
             orderBy: { order: 'asc' }
           }
         }

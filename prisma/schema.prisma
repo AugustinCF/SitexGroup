@@ -106,20 +106,28 @@ model ProductImage {
   imageUrl  String
 }
 
-model Attribute {
-  id        Int     @id @default(autoincrement())
-  productId Int
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name_it   String
+model AttributeDefinition {
+  id        Int       @id @default(autoincrement())
+  name_it   String    @unique
   name_en   String?
   name_es   String?
   name_de   String?
   name_fr   String?
-  value_it  String
-  value_en  String?
-  value_es  String?
-  value_de  String?
-  value_fr  String?
-  order     Int     @default(0)
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  values    Attribute[]
+}
+
+model Attribute {
+  id                    Int                 @id @default(autoincrement())
+  productId             Int
+  product               Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeDefinitionId Int
+  definition            AttributeDefinition @relation(fields: [attributeDefinitionId], references: [id], onDelete: Cascade)
+  value_it              String
+  value_en              String?
+  value_es              String?
+  value_de              String?
+  value_fr              String?
+  order                 Int                 @default(0)
+  createdAt             DateTime            @default(now())
 }

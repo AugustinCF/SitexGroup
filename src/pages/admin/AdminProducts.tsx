@@ -7,21 +7,24 @@ export const AdminProducts = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [attributeDefinitions, setAttributeDefinitions] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
   const [imageFiles, setImageFiles] = useState<FileList | null>(null);
   const [attributes, setAttributes] = useState<any[]>([]);
-  const [newAttr, setNewAttr] = useState({ name_it: '', name_en: '', value_it: '', value_en: '', order: 0 });
+  const [newAttr, setNewAttr] = useState({ attributeDefinitionId: '', value_it: '', value_en: '', order: 0 });
 
   const fetchAll = async () => {
-    const [pRes, bRes, cRes] = await Promise.all([
+    const [pRes, bRes, cRes, dRes] = await Promise.all([
       fetch('/api/products'),
       fetch('/api/brands'),
-      fetch('/api/categories')
+      fetch('/api/categories'),
+      fetch('/api/attribute-definitions')
     ]);
     setProducts(await pRes.json());
     setBrands(await bRes.json());
     setCategories(await cRes.json());
+    setAttributeDefinitions(await dRes.json());
   };
 
   const fetchAttributes = async (productId: number) => {
@@ -80,7 +83,7 @@ export const AdminProducts = () => {
       body: JSON.stringify(newAttr)
     });
     if (res.ok) {
-      setNewAttr({ name_it: '', name_en: '', value_it: '', value_en: '', order: attributes.length + 1 });
+      setNewAttr({ attributeDefinitionId: '', value_it: '', value_en: '', order: attributes.length + 1 });
       fetchAttributes(isEditing.id);
     }
   };
@@ -237,7 +240,7 @@ export const AdminProducts = () => {
                       <table className="w-full text-left text-sm">
                         <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
                           <tr>
-                            <th className="p-3">Nome (IT/EN)</th>
+                            <th className="p-3">Attributo (Nome)</th>
                             <th className="p-3">Valore (IT/EN)</th>
                             <th className="p-3">Ordine</th>
                             <th className="p-3">Azioni</th>
@@ -247,8 +250,8 @@ export const AdminProducts = () => {
                           {attributes.map(attr => (
                             <tr key={attr.id} className="hover:bg-slate-50/50">
                               <td className="p-3 font-medium">
-                                <div>{attr.name_it}</div>
-                                <div className="text-slate-400 text-[10px] italic">{attr.name_en}</div>
+                                <div>{attr.definition?.name_it}</div>
+                                <div className="text-slate-400 text-[10px] italic">{attr.definition?.name_en}</div>
                               </td>
                               <td className="p-3">
                                 <div>{attr.value_it}</div>
@@ -267,20 +270,18 @@ export const AdminProducts = () => {
                     </div>
 
                     <div className="bg-slate-50 p-4 rounded-xl grid grid-cols-1 md:grid-cols-5 gap-3 items-end border border-slate-100">
-                      <div className="space-y-1 col-span-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase">Nome IT/EN</label>
-                        <input 
-                          placeholder="es. Peso"
+                      <div className="space-y-1 col-span-1 text-left">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Scegli Attributo</label>
+                        <select 
                           className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
-                          value={newAttr.name_it}
-                          onChange={e => setNewAttr({...newAttr, name_it: e.target.value})}
-                        />
-                        <input 
-                          placeholder="es. Weight"
-                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
-                          value={newAttr.name_en}
-                          onChange={e => setNewAttr({...newAttr, name_en: e.target.value})}
-                        />
+                          value={newAttr.attributeDefinitionId}
+                          onChange={e => setNewAttr({...newAttr, attributeDefinitionId: e.target.value})}
+                        >
+                          <option value="">Seleziona...</option>
+                          {attributeDefinitions.map(def => (
+                            <option key={def.id} value={def.id}>{def.name_it}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="space-y-1 col-span-2">
                         <label className="text-[10px] font-bold text-slate-400 uppercase">Valore IT/EN</label>

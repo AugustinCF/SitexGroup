@@ -149,7 +149,7 @@ export const ProductDetailPage = () => {
                       key={attr.id} 
                       className={`grid grid-cols-2 p-4 text-sm ${idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} ${idx !== product.attributes.length - 1 ? 'border-b border-slate-100' : ''}`}
                     >
-                      <div className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">{t(attr, 'name')}</div>
+                      <div className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">{t(attr.definition, 'name')}</div>
                       <div className="text-brand-900 font-medium">{t(attr, 'value')}</div>
                     </div>
                   ))}
