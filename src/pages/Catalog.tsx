@@ -16,7 +16,6 @@ export const CatalogPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'none'>('none');
-  const [showFilters, setShowFilters] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -129,95 +128,80 @@ export const CatalogPage = () => {
       </section>
 
       <section className="bg-white border-b border-slate-200 sticky top-20 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${showFilters ? 'bg-brand-900 border-brand-900 text-white' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}
-              >
-                <Filter size={18} />
-                <span className="font-bold text-sm uppercase">Filtri</span>
-                <ChevronDown size={14} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-              </button>
-              
-              <div className="h-8 w-px bg-slate-200" />
-              
-              <span className="text-sm text-slate-400 font-medium">
-                {filteredProducts.length} {filteredProducts.length === 1 ? 'prodotto' : 'prodotti'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex bg-slate-100 p-1 rounded-xl">
-                <button 
-                  onClick={() => setSortOrder('asc')}
-                  className={`p-2 rounded-lg transition-all ${sortOrder === 'asc' ? 'bg-white text-gold shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                  title="Prezzo: Crescente"
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+            <div className="flex flex-wrap gap-6 items-end flex-1">
+              <div className="w-[250px]">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Categoria</label>
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-gold/20 outline-none appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
                 >
-                  <ArrowUpNarrowWide size={20} />
-                </button>
-                <button 
-                  onClick={() => setSortOrder('desc')}
-                  className={`p-2 rounded-lg transition-all ${sortOrder === 'desc' ? 'bg-white text-gold shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                  title="Prezzo: Decrescente"
-                >
-                  <ArrowDownNarrowWide size={20} />
-                </button>
+                  <option value="all">Tutte le Categorie</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name_it}</option>
+                  ))}
+                </select>
               </div>
 
-              {(selectedCategory !== 'all' || selectedBrand !== 'all' || sortOrder !== 'none' || searchQuery) && (
-                <button 
-                  onClick={resetFilters}
-                  className="p-2 text-slate-400 hover:text-brand-900 transition-colors"
-                  title="Resetta tutto"
+              <div className="w-[250px]">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Marchio</label>
+                <select 
+                  value={selectedBrand}
+                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-gold/20 outline-none appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
                 >
-                  <RotateCcw size={20} />
-                </button>
-              )}
+                  <option value="all">Tutti i Marchi</option>
+                  {brands.map(brand => (
+                    <option key={brand.id} value={brand.id}>{brand.name_it}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="w-[250px]">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Ordinamento Prezzo</label>
+                <div className="flex bg-slate-50 border border-slate-200 rounded-xl p-1 h-[46px]">
+                  <button 
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'none' : 'asc')}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-lg transition-all ${sortOrder === 'asc' ? 'bg-white text-gold shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    <ArrowUpNarrowWide size={18} />
+                    <span className="text-[10px] font-bold uppercase tracking-tight">Crescente</span>
+                  </button>
+                  <button 
+                    onClick={() => setSortOrder(sortOrder === 'desc' ? 'none' : 'desc')}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-lg transition-all ${sortOrder === 'desc' ? 'bg-white text-gold shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    <ArrowDownNarrowWide size={18} />
+                    <span className="text-[10px] font-bold uppercase tracking-tight">Decrescente</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between lg:justify-end gap-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-100 w-full lg:w-auto">
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-slate-400 font-medium">
+                  {filteredProducts.length} {filteredProducts.length === 1 ? 'prodotto' : 'prodotti'}
+                </span>
+                
+                {(selectedCategory !== 'all' || selectedBrand !== 'all' || sortOrder !== 'none' || searchQuery) && (
+                  <>
+                    <div className="h-6 w-px bg-slate-200" />
+                    <button 
+                      onClick={resetFilters}
+                      className="flex items-center gap-2 text-slate-400 hover:text-brand-900 transition-colors group"
+                      title="Resetta tutto"
+                    >
+                      <RotateCcw size={18} className="group-hover:rotate-[-45deg] transition-transform" />
+                      <span className="text-[10px] font-bold uppercase">Resetta</span>
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="pt-6 pb-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 border-t border-slate-100 mt-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Categoria</label>
-                    <select 
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-gold/20 outline-none appearance-none cursor-pointer"
-                    >
-                      <option value="all">Tutte le Categorie</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name_it}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Marchio</label>
-                    <select 
-                      value={selectedBrand}
-                      onChange={(e) => setSelectedBrand(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-gold/20 outline-none appearance-none cursor-pointer"
-                    >
-                      <option value="all">Tutti i Marchi</option>
-                      {brands.map(brand => (
-                        <option key={brand.id} value={brand.id}>{brand.name_it}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </section>
 
