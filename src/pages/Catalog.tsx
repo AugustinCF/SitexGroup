@@ -90,7 +90,7 @@ export const CatalogPage = () => {
                 <img 
                   src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
                   alt={t(product, 'name')} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="w-full h-full object-cover"
                 />
                 <div className="absolute top-4 right-4 bg-brand-900/80 backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-widest">
                   {product.slug || product.id}

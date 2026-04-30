@@ -85,7 +85,7 @@ export const BrandDetailPage = () => {
                   <img 
                     src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
                     alt={product.name_it} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-4 left-4 flex gap-2">
                     <span className="bg-gold/90 backdrop-blur-sm text-white px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest">{product.categoryName}</span>

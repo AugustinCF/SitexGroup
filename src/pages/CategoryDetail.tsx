@@ -80,7 +80,7 @@ export const CategoryDetailPage = () => {
                   <img 
                     src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
                     alt={product.name_it} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    className="w-full h-full object-cover"
                   />
                   <div className="absolute top-6 left-6">
                     <span className="bg-white/95 backdrop-blur-sm px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-brand-900 shadow-lg">
