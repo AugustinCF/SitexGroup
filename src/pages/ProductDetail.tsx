@@ -33,8 +33,9 @@ export const ProductDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="pt-32 min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold"></div>
+      <div className="pt-32 min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
+        <p className="mt-4 text-slate-400 font-medium animate-pulse italic">Caricamento prodotto...</p>
       </div>
     );
   }
@@ -71,8 +72,8 @@ export const ProductDetailPage = () => {
           {/* Gallery Section */}
           <div className="space-y-6">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="aspect-square bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200"
             >
               <img 
@@ -118,8 +119,8 @@ export const ProductDetailPage = () => {
             </div>
 
             <motion.h1 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="text-4xl md:text-5xl font-display font-bold text-brand-900 mb-6 italic"
             >
               {t(product, 'name')}

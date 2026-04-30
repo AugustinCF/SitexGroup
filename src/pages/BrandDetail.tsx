@@ -31,7 +31,14 @@ export const BrandDetailPage = () => {
     fetchData();
   }, [slug]);
 
-  if (loading) return <div className="pt-40 text-center">Caricamento...</div>;
+  if (loading) {
+    return (
+      <div className="pt-32 min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
+        <p className="mt-4 text-slate-400 font-medium animate-pulse italic">Caricamento marchio...</p>
+      </div>
+    );
+  }
   if (!brand) return <div className="pt-40 text-center uppercase font-bold text-slate-400 font-display">Marchio non trovato</div>;
 
   return (

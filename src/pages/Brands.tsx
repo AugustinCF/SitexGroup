@@ -19,8 +19,8 @@ export const BrandsPage = () => {
       <section className="py-20 bg-brand-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             className="text-5xl font-display font-bold mb-6 italic"
           >
             I Nostri Partner
