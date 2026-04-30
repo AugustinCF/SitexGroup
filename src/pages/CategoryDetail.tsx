@@ -89,6 +89,14 @@ export const CategoryDetailPage = () => {
                     alt={product.name_it} 
                     className="w-full h-full object-cover"
                   />
+                  <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+                    <div className="bg-brand-900/80 backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-widest">
+                      {product.id}
+                    </div>
+                    <div className={`${product.condition === 'Usato' ? 'bg-orange-500/90' : 'bg-green-600/90'} backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-widest shadow-sm`}>
+                      {product.condition || 'Nuovo'}
+                    </div>
+                  </div>
                   <div className="absolute top-6 left-6">
                     <span className="bg-white/95 backdrop-blur-sm px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-brand-900 shadow-lg">
                       {product.brandName}
@@ -105,7 +113,10 @@ export const CategoryDetailPage = () => {
                   <div className="mt-auto flex justify-between items-center pt-6 border-t border-slate-100">
                     <div className="text-gold font-bold text-2xl font-display flex items-center gap-1">
                       <Euro size={20} />
-                      {Number(product.price).toLocaleString('it-IT')}
+                      {product.price 
+                        ? Number(product.price).toLocaleString('it-IT')
+                        : 'Contattaci'
+                      }
                     </div>
                     <Link to={`/prodotto/${product.id}`} className="w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-gold transition-colors">
                       <ChevronRight size={20} />

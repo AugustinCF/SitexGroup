@@ -110,7 +110,7 @@ export const AdminProducts = () => {
         <h1 className="text-3xl font-bold">Gestione Prodotti</h1>
         {!isEditing && Object.keys(formData).length === 0 && (
           <button 
-            onClick={() => setFormData({ visibility: 'true', price: 0 })}
+            onClick={() => setFormData({ visibility: 'true', condition: 'Nuovo' })}
             className="flex items-center gap-2 px-6 py-3 bg-gold text-white font-bold rounded-xl"
           >
             <Plus size={20} /> Nuovo Prodotto
@@ -165,18 +165,26 @@ export const AdminProducts = () => {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2">
                     <Euro size={16} className="text-slate-400" />
                     <input 
                       type="number" 
                       step="0.01" 
-                      placeholder="Prezzo"
+                      placeholder="Prezzo (opzionale)"
                       className="flex-1 bg-transparent text-sm outline-none"
                       value={formData.price || ''}
                       onChange={e => setFormData({...formData, price: e.target.value})}
                     />
                   </div>
+                  <select 
+                    className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold uppercase"
+                    value={formData.condition || 'Nuovo'}
+                    onChange={e => setFormData({...formData, condition: e.target.value})}
+                  >
+                    <option value="Nuovo">Nuovo</option>
+                    <option value="Usato">Usato</option>
+                  </select>
                   <div className="flex items-center gap-4 p-2 bg-slate-50 border border-slate-200 rounded-lg">
                     <button 
                       type="button"
@@ -374,8 +382,11 @@ export const AdminProducts = () => {
               <p className="text-[10px] text-slate-400 font-mono mb-3">/{product.slug}</p>
               
               <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-50">
-                <div className="text-gold font-bold flex items-center gap-1">
-                  <Euro size={12} /> {Number(product.price).toLocaleString('it-IT')}
+                <div className="flex flex-col">
+                  <div className="text-gold font-bold flex items-center gap-1">
+                    <Euro size={12} /> {product.price ? Number(product.price).toLocaleString('it-IT') : 'Trattativa'}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase text-slate-400">{product.condition || 'Nuovo'}</span>
                 </div>
                 <div className="flex gap-1">
                   <button 

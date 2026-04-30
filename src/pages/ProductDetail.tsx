@@ -101,8 +101,8 @@ export const ProductDetailPage = () => {
           {/* Info Section */}
           <div className="flex flex-col">
             <div className="flex items-center gap-3 mb-4">
-              <span className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white ${product.visibility ? 'bg-green-500' : 'bg-red-500'}`}>
-                {product.visibility ? 'Disponibile' : 'Esaurito'}
+              <span className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white ${product.condition === 'Usato' ? 'bg-orange-500' : 'bg-green-600'}`}>
+                {product.condition || 'Nuovo'}
               </span>
               <div className="flex gap-2">
                 {product.categoryName && (
@@ -128,8 +128,11 @@ export const ProductDetailPage = () => {
 
             <div className="text-4xl font-display font-bold text-gold mb-10 flex items-center gap-2">
               <Euro size={32} />
-              {Number(product.price).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-              <span className="text-sm font-medium text-slate-400 ml-2 italic">+ IVA</span>
+              {product.price 
+                ? Number(product.price).toLocaleString('it-IT', { minimumFractionDigits: 2 })
+                : 'Trattativa Riservata'
+              }
+              {product.price && <span className="text-sm font-medium text-slate-400 ml-2 italic">+ IVA</span>}
             </div>
 
             <div className="prose prose-slate max-w-none mb-12">

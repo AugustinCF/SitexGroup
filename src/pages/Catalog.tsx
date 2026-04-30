@@ -229,8 +229,13 @@ export const CatalogPage = () => {
                       alt={t(product, 'name')} 
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-4 right-4 bg-brand-900/80 backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-widest">
-                      {product.slug || product.id}
+                    <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+                      <div className="bg-brand-900/80 backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-widest">
+                        {product.id}
+                      </div>
+                      <div className={`${product.condition === 'Usato' ? 'bg-orange-500/90' : 'bg-green-600/90'} backdrop-blur-md px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-widest shadow-sm`}>
+                        {product.condition || 'Nuovo'}
+                      </div>
                     </div>
                     <div className="absolute bottom-4 left-4 flex gap-2">
                       {product.categoryName && (
@@ -251,7 +256,10 @@ export const CatalogPage = () => {
                     <div className="mt-auto flex justify-between items-center pt-6 border-t border-slate-100">
                       <div className="flex items-center gap-2 text-gold font-bold text-xl font-display">
                         <Euro size={18} />
-                        {Number(product.price).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                        {product.price 
+                          ? Number(product.price).toLocaleString('it-IT', { minimumFractionDigits: 2 })
+                          : 'Contattaci'
+                        }
                       </div>
                     </div>
                   </div>

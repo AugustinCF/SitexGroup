@@ -84,6 +84,7 @@ model Product {
   categoryId         Int?
   category           Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   price              Float?
+  condition          String?        @default("Nuovo")
   meta_title_it      String?
   meta_title_en      String?
   meta_title_es      String?

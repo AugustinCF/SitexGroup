@@ -374,7 +374,8 @@ async function startServer() {
           visibility: data.visibility === 'true',
           brandId: data.brandId ? parseInt(data.brandId) : null,
           categoryId: data.categoryId ? parseInt(data.categoryId) : null,
-          price: parseFloat(data.price) || 0,
+          price: data.price ? parseFloat(data.price) : null,
+          condition: data.condition || 'Nuovo',
           meta_title_it: data.meta_title_it, meta_title_en: data.meta_title_en, meta_title_es: data.meta_title_es, meta_title_de: data.meta_title_de, meta_title_fr: data.meta_title_fr,
           meta_description_it: data.meta_description_it, meta_description_en: data.meta_description_en, meta_description_es: data.meta_description_es, meta_description_de: data.meta_description_de, meta_description_fr: data.meta_description_fr
         }
@@ -450,7 +451,8 @@ async function startServer() {
           visibility: data.visibility === 'true',
           brandId: data.brandId ? parseInt(data.brandId) : null,
           categoryId: data.categoryId ? parseInt(data.categoryId) : null,
-          price: parseFloat(data.price) || 0,
+          price: data.price ? parseFloat(data.price) : null,
+          condition: data.condition || 'Nuovo',
           meta_title_it: data.meta_title_it, meta_title_en: data.meta_title_en, meta_title_es: data.meta_title_es, meta_title_de: data.meta_title_de, meta_title_fr: data.meta_title_fr,
           meta_description_it: data.meta_description_it, meta_description_en: data.meta_description_en, meta_description_es: data.meta_description_es, meta_description_de: data.meta_description_de, meta_description_fr: data.meta_description_fr
         }
@@ -699,7 +701,8 @@ async function startServer() {
               name_it: name,
               slug,
               description_it: row.description_it || '',
-              price: parseFloat(row.price) || 0,
+              price: row.price ? parseFloat(row.price) : null,
+              condition: row.condition || 'Nuovo',
               brandId,
               categoryId,
               visibility: true
