@@ -6,7 +6,7 @@ import { Euro, ChevronRight, Package } from 'lucide-react';
 
 export const BrandDetailPage = () => {
   const { slug } = useParams();
-  const { t } = useLanguage();
+  const { t, formatText } = useLanguage();
   const [brand, setBrand] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,8 +55,8 @@ export const BrandDetailPage = () => {
           </div>
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 italic">{brand.name_it}</h1>
-            <p className="text-xl text-slate-400 max-w-2xl leading-relaxed">
-              {t(brand, 'description')}
+            <p className="text-xl text-slate-400 max-w-2xl leading-relaxed whitespace-pre-wrap">
+              {formatText(t(brand, 'description'))}
             </p>
             {brand.website && (
               <a 
@@ -102,8 +102,8 @@ export const BrandDetailPage = () => {
                   <Link to={`/prodotto/${product.id}`}>
                     <h4 className="text-xl font-bold mb-2 group-hover:text-gold transition-colors">{product.name_it}</h4>
                   </Link>
-                  <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed">
-                    {t(product, 'description')}
+                  <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed whitespace-pre-wrap">
+                    {formatText(t(product, 'description'))}
                   </p>
                   <div className="mt-auto flex justify-between items-center pt-6 border-t border-slate-100">
                     <div className="flex items-center gap-2 text-gold font-bold text-xl font-display">

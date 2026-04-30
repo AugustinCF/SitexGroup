@@ -6,7 +6,7 @@ import { Euro, ChevronRight, Package, Layers } from 'lucide-react';
 
 export const CategoryDetailPage = () => {
   const { slug } = useParams();
-  const { t } = useLanguage();
+  const { t, formatText } = useLanguage();
   const [category, setCategory] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,8 +52,8 @@ export const CategoryDetailPage = () => {
               <span className="text-gold font-bold uppercase tracking-widest text-xs">Settore Industriale</span>
             </div>
             <h1 className="text-5xl md:text-7xl font-display font-bold mb-8 italic">{category.name_it}</h1>
-            <p className="text-xl text-slate-400 leading-relaxed max-w-2xl">
-              {t(category, 'description')}
+            <p className="text-xl text-slate-400 leading-relaxed max-w-2xl whitespace-pre-wrap">
+              {formatText(t(category, 'description'))}
             </p>
           </div>
         </div>
@@ -99,8 +99,8 @@ export const CategoryDetailPage = () => {
                   <Link to={`/prodotto/${product.id}`}>
                     <h4 className="text-2xl font-bold mb-3 italic group-hover:text-gold transition-colors">{product.name_it}</h4>
                   </Link>
-                  <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed">
-                    {t(product, 'description')}
+                  <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed whitespace-pre-wrap">
+                    {formatText(t(product, 'description'))}
                   </p>
                   <div className="mt-auto flex justify-between items-center pt-6 border-t border-slate-100">
                     <div className="text-gold font-bold text-2xl font-display flex items-center gap-1">

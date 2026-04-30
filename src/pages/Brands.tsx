@@ -6,7 +6,7 @@ import { ChevronRight } from 'lucide-react';
 
 export const BrandsPage = () => {
   const [brands, setBrands] = useState<any[]>([]);
-  const { t } = useLanguage();
+  const { t, formatText } = useLanguage();
 
   useEffect(() => {
     fetch('/api/brands')
@@ -53,8 +53,8 @@ export const BrandsPage = () => {
                 <Link to={`/marchi/${brand.slug}`}>
                   <h4 className="text-2xl font-bold mb-3 italic group-hover:text-gold transition-colors">{brand.name_it}</h4>
                 </Link>
-                <p className="text-slate-500 text-sm mb-6 line-clamp-3 leading-relaxed">
-                  {t(brand, 'description')}
+                <p className="text-slate-500 text-sm mb-6 line-clamp-3 leading-relaxed whitespace-pre-wrap">
+                  {formatText(t(brand, 'description'))}
                 </p>
                 <Link 
                   to={`/marchi/${brand.slug}`} 

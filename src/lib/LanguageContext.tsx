@@ -6,6 +6,7 @@ interface LanguageContextType {
   lang: Language;
   setLang: (lang: Language) => void;
   t: (obj: any, field: string) => string;
+  formatText: (text: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -24,11 +25,18 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const t = (obj: any, field: string) => {
     if (!obj) return '';
     const localizedField = `${field}_${lang}`;
-    return obj[localizedField] || obj[`${field}_it`] || obj[field] || '';
+    const value = obj[localizedField] || obj[`${field}_it`] || obj[field] || '';
+    return value;
+  };
+
+  const formatText = (text: string) => {
+    if (!text) return '';
+    // Replace literal \n with actual newlines if they are present as strings
+    return text.replace(/\\n/g, '\n');
   };
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t }}>
+    <LanguageContext.Provider value={{ lang, setLang, t, formatText }}>
       {children}
     </LanguageContext.Provider>
   );

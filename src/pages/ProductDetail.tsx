@@ -6,7 +6,7 @@ import { useLanguage } from '../lib/LanguageContext';
 
 export const ProductDetailPage = () => {
   const { id } = useParams();
-  const { t } = useLanguage();
+  const { t, formatText } = useLanguage();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState<string>('');
@@ -135,7 +135,7 @@ export const ProductDetailPage = () => {
             <div className="prose prose-slate max-w-none mb-12">
               <h3 className="text-lg font-bold text-brand-900 mb-3 italic">Descrizione Prodotto</h3>
               <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">
-                {t(product, 'description')}
+                {formatText(t(product, 'description'))}
               </p>
             </div>
 
@@ -151,7 +151,7 @@ export const ProductDetailPage = () => {
                       className={`grid grid-cols-2 p-4 text-sm ${idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} ${idx !== product.attributes.length - 1 ? 'border-b border-slate-100' : ''}`}
                     >
                       <div className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">{t(attr.definition, 'name')}</div>
-                      <div className="text-brand-900 font-medium">{t(attr, 'value')}</div>
+                      <div className="text-brand-900 font-medium whitespace-pre-wrap">{formatText(t(attr, 'value'))}</div>
                     </div>
                   ))}
                 </div>

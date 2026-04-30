@@ -207,13 +207,18 @@ export const AdminProducts = () => {
               <div className="space-y-4">
                 <span className="text-sm font-bold text-slate-400 block uppercase tracking-widest">Descrizioni</span>
                 {languages.map(l => (
-                  <textarea 
-                    key={l}
-                    placeholder={`Descrizione (${l.toUpperCase()})`}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 h-20 text-sm"
-                    value={formData[`description_${l}`] || ''}
-                    onChange={e => setFormData({...formData, [`description_${l}`]: e.target.value})}
-                  />
+                  <div key={l} className="space-y-1">
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Descrizione ({l})</span>
+                      <span className="text-[10px] text-slate-300 italic">Supporta \n per a capo</span>
+                    </div>
+                    <textarea 
+                      placeholder={`Descrizione (${l.toUpperCase()})`}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 h-32 text-sm font-mono focus:bg-white focus:ring-2 focus:ring-gold/20 outline-none transition-all"
+                      value={formData[`description_${l}`] || ''}
+                      onChange={e => setFormData({...formData, [`description_${l}`]: e.target.value})}
+                    />
+                  </div>
                 ))}
               </div>
               <div className="space-y-4">
@@ -294,15 +299,15 @@ export const AdminProducts = () => {
                       </div>
                       <div className="space-y-1 col-span-2">
                         <label className="text-[10px] font-bold text-slate-400 uppercase">Valore IT/EN</label>
-                        <input 
+                        <textarea 
                           placeholder="es. 10kg"
-                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs h-12 font-mono scrollbar-hide"
                           value={newAttr.value_it}
                           onChange={e => setNewAttr({...newAttr, value_it: e.target.value})}
                         />
-                        <input 
+                        <textarea 
                           placeholder="es. 10kg"
-                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
+                          className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs h-12 font-mono scrollbar-hide"
                           value={newAttr.value_en}
                           onChange={e => setNewAttr({...newAttr, value_en: e.target.value})}
                         />

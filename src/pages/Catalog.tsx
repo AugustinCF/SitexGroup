@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../lib/LanguageContext';
 
 export const CatalogPage = () => {
-  const { t } = useLanguage();
+  const { t, formatText } = useLanguage();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,8 +119,8 @@ export const CatalogPage = () => {
                     <Link to={`/prodotto/${product.id}`}>
                       <h4 className="text-xl font-bold mb-2 group-hover:text-gold transition-colors">{t(product, 'name')}</h4>
                     </Link>
-                    <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed">
-                      {t(product, 'description')}
+                    <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed whitespace-pre-wrap">
+                      {formatText(t(product, 'description'))}
                     </p>
                     <div className="mt-auto flex justify-between items-center pt-6 border-t border-slate-100">
                       <div className="flex items-center gap-2 text-gold font-bold text-xl font-display">
