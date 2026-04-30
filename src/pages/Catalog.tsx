@@ -62,12 +62,12 @@ export const CatalogPage = () => {
 
     // Category filter
     if (selectedCategory !== 'all') {
-      result = result.filter(p => p.categoryId == selectedCategory);
+      result = result.filter(p => String(p.categoryId) === selectedCategory);
     }
 
     // Brand filter
     if (selectedBrand !== 'all') {
-      result = result.filter(p => p.brandId == selectedBrand);
+      result = result.filter(p => String(p.brandId) === selectedBrand);
     }
 
     // Sorting
