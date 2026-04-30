@@ -31,8 +31,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const formatText = (text: string) => {
     if (!text) return '';
-    // Replace literal \n with actual newlines if they are present as strings
-    return text.replace(/\\n/g, '\n');
+    // Replace literal \n with actual newlines
+    // Replace &nbsp; with space
+    // Replace 3 or more consecutive newlines with just 2 to avoid huge gaps
+    return text
+      .replace(/\\n/g, '\n')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   };
 
   return (
