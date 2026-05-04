@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../lib/LanguageContext';
-import { Plus, Trash2, Edit, Save, X, Globe, Eye, EyeOff, Euro, Image as ImageIcon, ListTree } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, X, Globe, Eye, EyeOff, Euro, Image as ImageIcon, ListTree, Search, Filter } from 'lucide-react';
 
 export const AdminProducts = () => {
   const { lang } = useLanguage();
@@ -13,6 +13,11 @@ export const AdminProducts = () => {
   const [imageFiles, setImageFiles] = useState<FileList | null>(null);
   const [attributes, setAttributes] = useState<any[]>([]);
   const [newAttr, setNewAttr] = useState({ attributeDefinitionId: '', value_it: '', value_en: '', order: 0 });
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [adminSelectedCategory, setAdminSelectedCategory] = useState<string>('all');
+  const [adminSelectedBrand, setAdminSelectedBrand] = useState<string>('all');
 
   const fetchAll = async () => {
     try {
@@ -44,6 +49,23 @@ export const AdminProducts = () => {
   useEffect(() => {
     fetchAll();
   }, []);
+
+  const filteredProducts = React.useMemo(() => {
+    return products.filter(product => {
+      const matchesSearch = searchQuery.trim() === '' || 
+        product.name_it?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.slug?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(product.id).includes(searchQuery);
+      
+      const matchesCategory = adminSelectedCategory === 'all' || 
+        String(product.categoryId) === adminSelectedCategory;
+      
+      const matchesBrand = adminSelectedBrand === 'all' || 
+        String(product.brandId) === adminSelectedBrand;
+
+      return matchesSearch && matchesCategory && matchesBrand;
+    });
+  }, [products, searchQuery, adminSelectedCategory, adminSelectedBrand]);
 
   const resetForm = () => {
     setIsEditing(null);
@@ -122,6 +144,69 @@ export const AdminProducts = () => {
           </button>
         )}
       </div>
+
+      {!isEditing && Object.keys(formData).length === 0 && (
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text"
+              placeholder="Cerca per nome, slug o ID..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-gold/20 outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          
+          <div className="flex gap-4 w-full md:w-auto">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex-1 md:flex-initial min-w-[180px]">
+              <Filter size={14} className="text-slate-400" />
+              <select 
+                className="bg-transparent text-xs font-bold uppercase outline-none w-full"
+                value={adminSelectedCategory}
+                onChange={(e) => setAdminSelectedCategory(e.target.value)}
+              >
+                <option value="all">Tutte le Categorie</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name_it}</option>)}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex-1 md:flex-initial min-w-[180px]">
+              <Filter size={14} className="text-slate-400" />
+              <select 
+                className="bg-transparent text-xs font-bold uppercase outline-none w-full"
+                value={adminSelectedBrand}
+                onChange={(e) => setAdminSelectedBrand(e.target.value)}
+              >
+                <option value="all">Tutti i Marchi</option>
+                {brands.map(b => <option key={b.id} value={b.id}>{b.name_it}</option>)}
+              </select>
+            </div>
+            
+            {(searchQuery || adminSelectedCategory !== 'all' || adminSelectedBrand !== 'all') && (
+              <button 
+                onClick={() => {
+                  setSearchQuery('');
+                  setAdminSelectedCategory('all');
+                  setAdminSelectedBrand('all');
+                }}
+                className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                title="Resetta filtri"
+              >
+                <X size={20} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {(isEditing || Object.keys(formData).length > 0) && (
         <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
@@ -362,7 +447,7 @@ export const AdminProducts = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {products.map(product => (
+        {filteredProducts.map(product => (
           <div key={product.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col group overflow-hidden">
             <div className="h-44 bg-slate-50 flex items-center justify-center overflow-hidden relative">
               {product.images && product.images.length > 0 ? (
