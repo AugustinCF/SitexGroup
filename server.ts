@@ -352,6 +352,7 @@ async function startServer() {
         ...p,
         brandName: p.brand?.name_it,
         categoryName: p.category?.name_it,
+        condition: p.condition || 'Nuovo',
         images: p.images.map(img => img.imageUrl)
       }));
       res.json(results);
@@ -364,6 +365,7 @@ async function startServer() {
   app.post('/api/products', isAdmin, upload.array('images', 10), async (req, res) => {
     try {
       const data = req.body;
+      console.log('[API] New product data received:', data);
       const slug = data.slug || slugify(data.name_it, { lower: true });
       
       const product = await prisma.product.create({
@@ -418,6 +420,7 @@ async function startServer() {
       if (!product) return res.status(404).json({ error: 'Not found' });
       res.json({ 
         ...product, 
+        condition: product.condition || 'Nuovo',
         images: product.images.map((img: any) => img.imageUrl) 
       });
     } catch (e: any) {
@@ -439,6 +442,7 @@ async function startServer() {
   app.put('/api/products/:id', isAdmin, upload.array('images', 10), async (req, res) => {
     try {
       const data = req.body;
+      console.log('[API] Update product data received:', data);
       const id = parseInt(req.params.id);
       const slug = data.slug || slugify(data.name_it, { lower: true });
       

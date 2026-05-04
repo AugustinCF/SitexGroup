@@ -57,10 +57,15 @@ export const AdminProducts = () => {
     const data = new FormData();
     Object.keys(formData).forEach(key => {
       // Don't send relation arrays or nulls
-      if (formData[key] !== null && typeof formData[key] !== 'object') {
+      if (formData[key] !== null && formData[key] !== undefined && typeof formData[key] !== 'object') {
         data.append(key, formData[key]);
       }
     });
+
+    // Ensure condition is explicitly sent if it's in formData
+    if (formData.condition) {
+      data.set('condition', formData.condition);
+    }
 
     if (imageFiles) {
       for (let i = 0; i < imageFiles.length; i++) {
@@ -394,6 +399,7 @@ export const AdminProducts = () => {
                       setIsEditing(product);
                       setFormData({
                         ...product,
+                        condition: product.condition || 'Nuovo',
                         visibility: product.visibility ? 'true' : 'false'
                       });
                       fetchAttributes(product.id);
