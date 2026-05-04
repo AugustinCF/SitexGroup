@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Wind, Gauge, Droplets, ShieldCheck } from 'lucide-react';
+import { ProductCarousel } from '../components/ProductCarousel';
 
 export const CompressorsPage = () => {
   return (
@@ -36,7 +37,7 @@ export const CompressorsPage = () => {
           ))}
         </div>
 
-        <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 flex flex-col md:flex-row">
+        <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 flex flex-col md:flex-row mb-24">
           <div className="p-12 md:w-1/2">
             <h2 className="text-3xl font-bold mb-6">Power System</h2>
             <p className="text-slate-600 mb-8 leading-relaxed italic">
@@ -53,6 +54,12 @@ export const CompressorsPage = () => {
           </div>
         </div>
       </section>
+
+      <ProductCarousel 
+        categorySlug="compressori" 
+        title="Catalogo Compressori" 
+        buttonText="Vedi tutti i Compressori" 
+      />
     </div>
   );
 };

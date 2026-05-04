@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Zap, Cpu, Settings, Target } from 'lucide-react';
+import { ProductCarousel } from '../components/ProductCarousel';
 
 export const WeldingPage = () => {
   return (
@@ -78,6 +79,12 @@ export const WeldingPage = () => {
           </div>
         </div>
       </section>
+
+      <ProductCarousel 
+        categorySlug="saldatura" 
+        title="Catalogo Saldatura" 
+        buttonText="Vedi tutti i prodotti per Saldatura" 
+      />
     </div>
   );
 };

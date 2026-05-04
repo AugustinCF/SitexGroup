@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Package, Euro, Search, X, Filter, ChevronDown, ArrowUpNarrowWide, ArrowDownNarrowWide, RotateCcw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../lib/LanguageContext';
 
 export const CatalogPage = () => {
   const { t, formatText } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
@@ -13,9 +14,16 @@ export const CatalogPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Filters
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedBrand, setSelectedBrand] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('categoria') || 'all');
+  const [selectedBrand, setSelectedBrand] = useState<string>(searchParams.get('marchio') || 'all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'none'>('none');
+
+  useEffect(() => {
+    const cat = searchParams.get('categoria');
+    const brand = searchParams.get('marchio');
+    if (cat) setSelectedCategory(cat);
+    if (brand) setSelectedBrand(brand);
+  }, [searchParams]);
 
   const fetchData = async () => {
     try {
