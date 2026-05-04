@@ -59,7 +59,20 @@ async function startServer() {
     next();
   });
 
-  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+  // Optimization for static files: caching and error handling
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true,
+    setHeaders: (res) => {
+      res.set('Cache-Control', 'public, max-age=86400');
+    }
+  }));
+
+  // Fallback for missing images to prevent proxy errors
+  app.get('/uploads/*', (req, res) => {
+    res.status(404).end();
+  });
 
   app.use(session({
     secret: 'tpc-group-secret-key-v2',

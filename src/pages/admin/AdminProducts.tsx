@@ -451,7 +451,7 @@ export const AdminProducts = () => {
           <div key={product.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col group overflow-hidden">
             <div className="h-44 bg-slate-50 flex items-center justify-center overflow-hidden relative">
               {product.images && product.images.length > 0 ? (
-                <img src={product.images[0]} alt={product.name_it} className="w-full h-full object-cover" />
+                <img src={product.images[0]} alt={product.name_it} loading="lazy" className="w-full h-full object-cover" />
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-300 italic text-xs">
                   <ImageIcon size={24} /> No Image

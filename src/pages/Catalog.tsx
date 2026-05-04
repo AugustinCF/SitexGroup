@@ -235,6 +235,7 @@ export const CatalogPage = () => {
                     <img 
                       src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
                       alt={t(product, 'name')} 
+                      loading="lazy"
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">

@@ -20,10 +20,14 @@ export const ProductCarousel: React.FC<ProductCarouselProps> = ({ categorySlug, 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Find category by slug
+        // 1. Find category by slug or name
         const catsRes = await fetch('/api/categories');
         const cats = await catsRes.json();
-        const targetCat = cats.find((c: any) => c.slug === categorySlug);
+        
+        const targetCat = cats.find((c: any) => 
+          (c.slug && c.slug.toLowerCase() === categorySlug.toLowerCase()) || 
+          (c.name_it && c.name_it.toLowerCase() === categorySlug.toLowerCase())
+        );
         
         if (targetCat) {
           setCategoryId(String(targetCat.id));
@@ -32,12 +36,18 @@ export const ProductCarousel: React.FC<ProductCarouselProps> = ({ categorySlug, 
           const allProducts = await productsRes.json();
           
           const filtered = allProducts
-            .filter((p: any) => String(p.categoryId) === String(targetCat.id))
+            .filter((p: any) => p.categoryId && String(p.categoryId) === String(targetCat.id))
             .filter((p: any) => p.visibility === 1 || p.visibility === true)
-            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .sort((a: any, b: any) => {
+              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return dateB - dateA;
+            })
             .slice(0, 10);
           
           setProducts(filtered);
+        } else {
+          console.warn(`Category not found for slug or name: ${categorySlug}`);
         }
       } catch (error) {
         console.error('Error fetching carousel products:', error);
@@ -121,6 +131,7 @@ export const ProductCarousel: React.FC<ProductCarouselProps> = ({ categorySlug, 
                 <img 
                   src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
                   alt={t(product, 'name')} 
+                  loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">

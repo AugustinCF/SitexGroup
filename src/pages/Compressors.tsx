@@ -56,7 +56,7 @@ export const CompressorsPage = () => {
       </section>
 
       <ProductCarousel 
-        categorySlug="compressori" 
+        categorySlug="Compressore" 
         title="Catalogo Compressori" 
         buttonText="Vedi tutti i Compressori" 
       />
