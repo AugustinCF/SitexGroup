@@ -107,20 +107,6 @@ export const ProductDetailPage = () => {
           {/* Info Section */}
           <div className="flex flex-col">
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              {product.brand && (
-                <Link 
-                  to={`/marchi/${product.brand.slug}`}
-                  className="flex items-center bg-white border border-slate-200 hover:border-gold transition-colors px-3 py-1 rounded-full group"
-                >
-                  {product.brand.logo ? (
-                    <img src={product.brand.logo} alt={product.brandName} className="h-4 w-auto object-contain" />
-                  ) : (
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-gold flex items-center gap-1">
-                      <Tag size={12} /> {product.brandName}
-                    </span>
-                  )}
-                </Link>
-              )}
               <span className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white ${product.condition === 'Usato' ? 'bg-orange-500' : 'bg-green-600'}`}>
                 {product.condition || 'Nuovo'}
               </span>
@@ -133,6 +119,23 @@ export const ProductDetailPage = () => {
                 </Link>
               )}
             </div>
+
+            {product.brand && (
+              <div className="mb-6">
+                <Link 
+                  to={`/marchi/${product.brand.slug}`}
+                  className="inline-flex items-center bg-white border border-slate-200 hover:border-gold transition-all px-5 py-3 rounded-2xl group shadow-sm hover:shadow-md"
+                >
+                  {product.brand.logo ? (
+                    <img src={product.brand.logo} alt={product.brandName} className="h-14 w-auto object-contain" />
+                  ) : (
+                    <span className="text-sm font-bold uppercase tracking-widest text-gold flex items-center gap-2">
+                      <Tag size={16} /> {product.brandName}
+                    </span>
+                  )}
+                </Link>
+              </div>
+            )}
 
             <div className="flex items-start justify-between gap-4 mb-4">
               <motion.h1 
