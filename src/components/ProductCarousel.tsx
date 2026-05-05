@@ -95,88 +95,90 @@ export const ProductCarousel: React.FC<ProductCarouselProps> = ({ categorySlug, 
   if (products.length === 0) return null;
 
   return (
-    <div className="py-24 bg-white border-t border-slate-100 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 flex justify-between items-end">
-        <div>
-          <span className="text-gold font-bold uppercase tracking-widest text-[10px] mb-2 block">Novità in catalogo</span>
-          <h2 className="text-4xl font-display font-bold italic">{title}</h2>
-        </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={scrollLeft}
-            className="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <button 
-            onClick={scrollRight}
-            className="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
-          >
-            <ChevronRight size={24} />
-          </button>
-        </div>
-      </div>
-
-      <div className="relative">
-        <div 
-          ref={scrollContainerRef}
-          className="flex gap-6 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-8 no-scrollbar scroll-smooth"
-        >
-          {products.map((product) => (
-            <motion.div 
-              key={product.id}
-              className="min-w-[300px] w-[300px] bg-slate-50 rounded-3xl overflow-hidden border border-slate-200 group flex flex-col"
+    <section className="py-24 bg-white border-t border-slate-100 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 flex justify-between items-end">
+          <div>
+            <span className="text-gold font-bold uppercase tracking-widest text-[10px] mb-2 block">Novità in catalogo</span>
+            <h2 className="text-4xl font-display font-bold italic">{title}</h2>
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={scrollLeft}
+              className="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
             >
-              <Link to={`/prodotto/${product.id}`} className="h-48 relative overflow-hidden bg-slate-200">
-                <img 
-                  src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
-                  alt={t(product, 'name')} 
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
-                  <div className="bg-brand-900/80 backdrop-blur-md px-2 py-0.5 rounded-full text-white text-[8px] font-bold uppercase tracking-widest">
-                    ID: {product.id}
+              <ChevronLeft size={24} />
+            </button>
+            <button 
+              onClick={scrollRight}
+              className="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </div>
+        </div>
+
+        <div className="relative">
+          <div 
+            ref={scrollContainerRef}
+            className="flex gap-6 overflow-x-auto pb-8 no-scrollbar scroll-smooth"
+          >
+            {products.map((product) => (
+              <motion.div 
+                key={product.id}
+                className="min-w-[300px] w-[300px] bg-slate-50 rounded-3xl overflow-hidden border border-slate-200 group flex flex-col"
+              >
+                <Link to={`/prodotto/${product.id}`} className="h-48 relative overflow-hidden bg-slate-200">
+                  <img 
+                    src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
+                    alt={t(product, 'name')} 
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
+                    <div className="bg-brand-900/80 backdrop-blur-md px-2 py-0.5 rounded-full text-white text-[8px] font-bold uppercase tracking-widest">
+                      ID: {product.id}
+                    </div>
+                    <div className={`${product.condition === 'Usato' ? 'bg-orange-500/90' : 'bg-green-600/90'} backdrop-blur-md px-2 py-0.5 rounded-full text-white text-[8px] font-bold uppercase tracking-widest shadow-sm`}>
+                      {product.condition || 'Nuovo'}
+                    </div>
                   </div>
-                  <div className={`${product.condition === 'Usato' ? 'bg-orange-500/90' : 'bg-green-600/90'} backdrop-blur-md px-2 py-0.5 rounded-full text-white text-[8px] font-bold uppercase tracking-widest shadow-sm`}>
-                    {product.condition || 'Nuovo'}
-                  </div>
-                </div>
-              </Link>
-              <div className="p-6 flex-1 flex flex-col">
-                <Link to={`/prodotto/${product.id}`}>
-                  <h4 className="font-bold mb-2 group-hover:text-gold transition-colors line-clamp-1">{t(product, 'name')}</h4>
                 </Link>
-                <p className="text-xs text-slate-500 mb-4 line-clamp-2">
-                  {t(product, 'brandName')}
-                </p>
-                <div className="mt-auto flex justify-between items-center pt-4 border-t border-slate-100">
-                  <div className="text-gold font-bold flex items-center gap-1">
-                    <Euro size={14} />
-                    {product.price 
-                      ? Number(product.price).toLocaleString('it-IT')
-                      : 'Contattaci'
-                    }
-                  </div>
-                  <Link to={`/prodotto/${product.id}`} className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center hover:bg-gold transition-colors">
-                    <ChevronRight size={16} />
+                <div className="p-6 flex-1 flex flex-col">
+                  <Link to={`/prodotto/${product.id}`}>
+                    <h4 className="font-bold mb-2 group-hover:text-gold transition-colors line-clamp-1">{t(product, 'name')}</h4>
                   </Link>
+                  <p className="text-xs text-slate-500 mb-4 line-clamp-2">
+                    {t(product, 'brandName')}
+                  </p>
+                  <div className="mt-auto flex justify-between items-center pt-4 border-t border-slate-100">
+                    <div className="text-gold font-bold flex items-center gap-1">
+                      <Euro size={14} />
+                      {product.price 
+                        ? Number(product.price).toLocaleString('it-IT')
+                        : 'Contattaci'
+                      }
+                    </div>
+                    <Link to={`/prodotto/${product.id}`} className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center hover:bg-gold transition-colors">
+                      <ChevronRight size={16} />
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-12 flex justify-center">
+          <Link 
+            to={`/catalogo?categoria=${categoryId}`}
+            className="inline-flex items-center gap-3 px-10 py-5 bg-brand-900 text-white font-bold rounded-2xl hover:bg-brand-800 transition-all shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95"
+          >
+            {buttonText}
+            <ChevronRight size={20} className="text-gold" />
+          </Link>
         </div>
       </div>
-
-      <div className="mt-12 flex justify-center">
-        <Link 
-          to={`/catalogo?categoria=${categoryId}`}
-          className="inline-flex items-center gap-3 px-10 py-5 bg-brand-900 text-white font-bold rounded-2xl hover:bg-brand-800 transition-all shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95"
-        >
-          {buttonText}
-          <ChevronRight size={20} className="text-gold" />
-        </Link>
-      </div>
-    </div>
+    </section>
   );
 };
