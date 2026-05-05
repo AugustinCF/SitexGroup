@@ -88,7 +88,7 @@ export const BrandDetailPage = () => {
                 layout
                 className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 group hover:shadow-xl transition-all flex flex-col"
               >
-                <Link to={`/prodotto/${product.id}`} className="h-56 relative bg-slate-100 overflow-hidden">
+                <Link to={`/prodotto/${product.slug}`} className="h-56 relative bg-slate-100 overflow-hidden">
                   <img 
                     src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
                     alt={product.name_it} 
@@ -107,7 +107,7 @@ export const BrandDetailPage = () => {
                   </div>
                 </Link>
                 <div className="p-8 flex-1 flex flex-col">
-                  <Link to={`/prodotto/${product.id}`}>
+                  <Link to={`/prodotto/${product.slug}`}>
                     <h4 className="text-xl font-bold mb-2 group-hover:text-gold transition-colors">{product.name_it}</h4>
                   </Link>
                   <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed whitespace-pre-wrap">

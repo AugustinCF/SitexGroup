@@ -463,7 +463,7 @@ export default function App() {
           <Route path="/categorie/:slug" element={<CategoryDetailPage />} />
           <Route path="/catalogo" element={<CatalogPage />} />
           <Route path="/accedi-al-catalogo" element={<LoginPage />} />
-          <Route path="/prodotto/:id" element={<ProductDetailPage />} />
+          <Route path="/prodotto/:slug" element={<ProductDetailPage />} />
           
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<div className="text-center py-20"><h2 className="text-4xl font-bold text-slate-200 uppercase italic">Seleziona una sezione</h2></div>} />

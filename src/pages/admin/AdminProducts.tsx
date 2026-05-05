@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../../lib/LanguageContext';
 import { Plus, Trash2, Edit, Save, X, Globe, Eye, EyeOff, Euro, Image as ImageIcon, ListTree, Search, Filter } from 'lucide-react';
 
@@ -468,7 +469,12 @@ export const AdminProducts = () => {
             </div>
             
             <div className="p-5 flex-1 flex flex-col">
-              <h3 className="font-bold text-slate-800 line-clamp-1">{product.name_it}</h3>
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="font-bold text-slate-800 line-clamp-1">{product.name_it}</h3>
+                <Link to={`/prodotto/${product.slug}`} target="_blank" className="text-slate-400 hover:text-gold transition-colors" title="Vedi sul sito">
+                  <Eye size={16} />
+                </Link>
+              </div>
               <p className="text-[10px] text-slate-400 font-mono mb-3">/{product.slug}</p>
               
               <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-50">

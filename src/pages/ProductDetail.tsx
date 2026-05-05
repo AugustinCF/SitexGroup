@@ -5,7 +5,7 @@ import { ChevronRight, Package, Euro, Phone, Mail, ArrowLeft, ShieldCheck, Tag, 
 import { useLanguage } from '../lib/LanguageContext';
 
 export const ProductDetailPage = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const { t, formatText } = useLanguage();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -14,7 +14,7 @@ export const ProductDetailPage = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`/api/products/${id}`);
+        const response = await fetch(`/api/products/by-slug/${slug}`);
         const data = await response.json();
         setProduct(data);
         if (data.images && data.images.length > 0) {
@@ -29,7 +29,7 @@ export const ProductDetailPage = () => {
       }
     };
     fetchProduct();
-  }, [id]);
+  }, [slug]);
 
   if (loading) {
     return (

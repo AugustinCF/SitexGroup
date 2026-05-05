@@ -128,7 +128,7 @@ export const ProductCarousel: React.FC<ProductCarouselProps> = ({ categorySlug, 
                 key={product.id}
                 className="min-w-[300px] w-[300px] bg-slate-50 rounded-3xl overflow-hidden border border-slate-200 group flex flex-col"
               >
-                <Link to={`/prodotto/${product.id}`} className="h-48 relative overflow-hidden bg-slate-200">
+                <Link to={`/prodotto/${product.slug}`} className="h-48 relative overflow-hidden bg-slate-200">
                   <img 
                     src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
                     alt={t(product, 'name')} 
@@ -145,7 +145,7 @@ export const ProductCarousel: React.FC<ProductCarouselProps> = ({ categorySlug, 
                   </div>
                 </Link>
                 <div className="p-6 flex-1 flex flex-col">
-                  <Link to={`/prodotto/${product.id}`}>
+                  <Link to={`/prodotto/${product.slug}`}>
                     <h4 className="font-bold mb-2 group-hover:text-gold transition-colors line-clamp-1">{t(product, 'name')}</h4>
                   </Link>
                   <p className="text-xs text-slate-500 mb-4 line-clamp-2">
@@ -159,7 +159,7 @@ export const ProductCarousel: React.FC<ProductCarouselProps> = ({ categorySlug, 
                         : 'Contattaci'
                       }
                     </div>
-                    <Link to={`/prodotto/${product.id}`} className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center hover:bg-gold transition-colors">
+                    <Link to={`/prodotto/${product.slug}`} className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center hover:bg-gold transition-colors">
                       <ChevronRight size={16} />
                     </Link>
                   </div>

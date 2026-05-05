@@ -83,7 +83,7 @@ export const CategoryDetailPage = () => {
                 layout
                 className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 group hover:shadow-xl transition-all flex flex-col"
               >
-                <Link to={`/prodotto/${product.id}`} className="h-64 relative bg-slate-100 overflow-hidden">
+                <Link to={`/prodotto/${product.slug}`} className="h-64 relative bg-slate-100 overflow-hidden">
                   <img 
                     src={product.images?.[0] || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069&auto=format&fit=crop'} 
                     alt={product.name_it} 
@@ -104,7 +104,7 @@ export const CategoryDetailPage = () => {
                   </div>
                 </Link>
                 <div className="p-8 flex-1 flex flex-col">
-                  <Link to={`/prodotto/${product.id}`}>
+                  <Link to={`/prodotto/${product.slug}`}>
                     <h4 className="text-2xl font-bold mb-3 italic group-hover:text-gold transition-colors">{product.name_it}</h4>
                   </Link>
                   <p className="text-slate-600 text-sm mb-6 line-clamp-3 leading-relaxed whitespace-pre-wrap">
@@ -118,7 +118,7 @@ export const CategoryDetailPage = () => {
                         : 'Contattaci'
                       }
                     </div>
-                    <Link to={`/prodotto/${product.id}`} className="w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-gold transition-colors">
+                    <Link to={`/prodotto/${product.slug}`} className="w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-gold transition-colors">
                       <ChevronRight size={20} />
                     </Link>
                   </div>
