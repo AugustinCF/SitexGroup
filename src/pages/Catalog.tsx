@@ -18,6 +18,8 @@ export const CatalogPage = () => {
   const [selectedBrand, setSelectedBrand] = useState<string>(searchParams.get('marchio') || 'all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'none'>('none');
 
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+
   useEffect(() => {
     const cat = searchParams.get('categoria');
     const brand = searchParams.get('marchio');
@@ -136,9 +138,10 @@ export const CatalogPage = () => {
       </section>
 
       <section className="bg-white border-b border-slate-200 sticky top-20 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-            <div className="flex flex-wrap gap-6 items-end flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
+          <div className="flex items-center justify-between gap-4">
+            {/* Desktop Filters (Hidden on Mobile) */}
+            <div className="hidden lg:flex flex-wrap gap-6 items-end flex-1">
               <div className="w-[250px]">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Categoria</label>
                 <select 
@@ -188,22 +191,36 @@ export const CatalogPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between lg:justify-end gap-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-100 w-full lg:w-auto">
+            {/* Mobile Filter Toggle */}
+            <button 
+              onClick={() => setIsMobileFiltersOpen(true)}
+              className="lg:hidden flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-gold transition-colors"
+            >
+              <Filter size={18} />
+              <span>Filtra Prodotti</span>
+              {(selectedCategory !== 'all' || selectedBrand !== 'all' || sortOrder !== 'none') && (
+                <span className="w-5 h-5 bg-gold text-white rounded-full flex items-center justify-center text-[10px]">
+                  {[selectedCategory !== 'all', selectedBrand !== 'all', sortOrder !== 'none'].filter(Boolean).length}
+                </span>
+              )}
+            </button>
+
+            <div className="flex items-center justify-end gap-6 w-full lg:w-auto">
               <div className="flex items-center gap-3">
-                <span className="text-sm text-slate-400 font-medium">
+                <span className="text-sm text-slate-400 font-medium whitespace-nowrap">
                   {filteredProducts.length} {filteredProducts.length === 1 ? 'prodotto' : 'prodotti'}
                 </span>
                 
                 {(selectedCategory !== 'all' || selectedBrand !== 'all' || sortOrder !== 'none' || searchQuery) && (
                   <>
-                    <div className="h-6 w-px bg-slate-200" />
+                    <div className="h-6 w-px bg-slate-200 hidden sm:block" />
                     <button 
                       onClick={resetFilters}
                       className="flex items-center gap-2 text-slate-400 hover:text-brand-900 transition-colors group"
                       title="Resetta tutto"
                     >
                       <RotateCcw size={18} className="group-hover:rotate-[-45deg] transition-transform" />
-                      <span className="text-[10px] font-bold uppercase">Resetta</span>
+                      <span className="text-[10px] font-bold uppercase hidden sm:inline">Resetta</span>
                     </button>
                   </>
                 )}
@@ -212,6 +229,123 @@ export const CatalogPage = () => {
           </div>
         </div>
       </section>
+
+      {/* Mobile Filters Drawer */}
+      <AnimatePresence>
+        {isMobileFiltersOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileFiltersOpen(false)}
+              className="fixed inset-0 bg-brand-900/40 backdrop-blur-sm z-[100] lg:hidden"
+            />
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 right-0 w-full max-w-xs bg-white z-[101] lg:hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="text-xl font-bold flex items-center gap-2 italic">
+                  <Filter size={20} className="text-gold" /> Filtri
+                </h2>
+                <button 
+                  onClick={() => setIsMobileFiltersOpen(false)}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 flex-1 overflow-y-auto space-y-8 no-scrollbar">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Categoria</label>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => setSelectedCategory('all')}
+                      className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all ${selectedCategory === 'all' ? 'bg-gold text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      Tutte le Categorie
+                    </button>
+                    {categories.map(cat => (
+                      <button 
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(String(cat.id))}
+                        className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all ${selectedCategory === String(cat.id) ? 'bg-gold text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                      >
+                        {cat.name_it}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Marchio</label>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => setSelectedBrand('all')}
+                      className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all ${selectedBrand === 'all' ? 'bg-gold text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      Tutti i Marchi
+                    </button>
+                    {brands.map(brand => (
+                      <button 
+                        key={brand.id}
+                        onClick={() => setSelectedBrand(String(brand.id))}
+                        className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all ${selectedBrand === String(brand.id) ? 'bg-gold text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                      >
+                        {brand.name_it}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Ordinamento</label>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'none' : 'asc')}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${sortOrder === 'asc' ? 'bg-gold text-white' : 'bg-slate-50 text-slate-600'}`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <ArrowUpNarrowWide size={18} /> Prezzo Crescente
+                      </span>
+                    </button>
+                    <button 
+                      onClick={() => setSortOrder(sortOrder === 'desc' ? 'none' : 'desc')}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${sortOrder === 'desc' ? 'bg-gold text-white' : 'bg-slate-50 text-slate-600'}`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <ArrowDownNarrowWide size={18} /> Prezzo Decrescente
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-slate-100 bg-slate-50">
+                <button 
+                  onClick={() => setIsMobileFiltersOpen(false)}
+                  className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-gold transition-colors"
+                >
+                  Mostra {filteredProducts.length} Prodotti
+                </button>
+                {(selectedCategory !== 'all' || selectedBrand !== 'all' || sortOrder !== 'none') && (
+                  <button 
+                    onClick={resetFilters}
+                    className="w-full mt-4 flex items-center justify-center gap-2 text-slate-400 font-bold py-2 text-sm uppercase tracking-widest"
+                  >
+                    <RotateCcw size={16} /> Resetta Filtri
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {loading ? (
