@@ -26,6 +26,7 @@ import {
 } from './constants';
 import { AssistancePage } from './pages/Assistance';
 import ScrollToTop from './components/ScrollToTop';
+import ScrollToTopButton from './components/ScrollToTopButton';
 import { WeldingPage } from './pages/Welding';
 import { CompressorsPage } from './pages/Compressors';
 import { BrandsPage } from './pages/Brands';
@@ -74,11 +75,15 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <Link to="/" className={`flex items-center gap-3 text-2xl font-display font-bold tracking-tighter ${isScrolled || !isHome ? 'text-brand-900' : 'text-white'}`}>
-              <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center text-white shadow-lg overflow-hidden">
-                <Zap size={24} fill="currentColor" />
-              </div>
-              <span>{COMPANY_NAME}</span>
+            <Link to="/" className="flex items-center">
+              <img 
+                src={isScrolled || !isHome 
+                  ? "https://dev2group.tpcsrl.com/uploads/static/LOGO%20TPC%20GROUP.png" 
+                  : "https://dev2group.tpcsrl.com/uploads/static/LOGO%20TPC%20GROUP%20white.png"
+                } 
+                alt={COMPANY_NAME} 
+                className={`${isScrolled || !isHome ? 'h-10' : 'h-14'} w-auto transition-all duration-300`}
+              />
             </Link>
           </div>
           
@@ -450,6 +455,7 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
+      <ScrollToTopButton />
       <div className="min-h-screen">
         <Navbar />
         
@@ -478,8 +484,14 @@ export default function App() {
         <footer className="bg-brand-900 border-t border-white/10 py-12 text-slate-500 text-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-8 md:space-y-0">
-              <div>
-                <span className="text-white text-xl font-display font-bold tracking-tighter block mb-2">{COMPANY_NAME}</span>
+              <div className="flex flex-col items-center md:items-start">
+                <Link to="/" className="block mb-4">
+                  <img 
+                    src="https://dev2group.tpcsrl.com/uploads/static/LOGO%20TPC%20GROUP%20white.png" 
+                    alt={COMPANY_NAME} 
+                    className="h-14 w-auto" 
+                  />
+                </Link>
                 <p>© 2024 {COMPANY_NAME}. Tutti i diritti riservati.</p>
                 <p className="mt-1 font-bold italic">{LOCATION}</p>
               </div>
