@@ -107,27 +107,31 @@ export const ProductDetailPage = () => {
           {/* Info Section */}
           <div className="flex flex-col">
             <div className="flex flex-wrap items-center gap-3 mb-4">
+              {product.brand && (
+                <Link 
+                  to={`/marchi/${product.brand.slug}`}
+                  className="flex items-center bg-white border border-slate-200 hover:border-gold transition-colors px-3 py-1 rounded-full group"
+                >
+                  {product.brand.logo ? (
+                    <img src={product.brand.logo} alt={product.brandName} className="h-4 w-auto object-contain" />
+                  ) : (
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gold flex items-center gap-1">
+                      <Tag size={12} /> {product.brandName}
+                    </span>
+                  )}
+                </Link>
+              )}
               <span className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white ${product.condition === 'Usato' ? 'bg-orange-500' : 'bg-green-600'}`}>
                 {product.condition || 'Nuovo'}
               </span>
-              <div className="flex flex-wrap gap-2">
-                {product.category && (
-                  <Link 
-                    to={`/categorie/${product.category.slug}`}
-                    className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 transition-colors px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500"
-                  >
-                    <Layers size={12} /> {product.categoryName}
-                  </Link>
-                )}
-                {product.brand && (
-                  <Link 
-                    to={`/marchi/${product.brand.slug}`}
-                    className="flex items-center gap-1 bg-gold/10 hover:bg-gold/20 transition-colors px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-gold"
-                  >
-                    <Tag size={12} /> {product.brandName}
-                  </Link>
-                )}
-              </div>
+              {product.category && (
+                <Link 
+                  to={`/categorie/${product.category.slug}`}
+                  className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 transition-colors px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500"
+                >
+                  <Layers size={12} /> {product.categoryName}
+                </Link>
+              )}
             </div>
 
             <div className="flex items-start justify-between gap-4 mb-4">
@@ -138,19 +142,6 @@ export const ProductDetailPage = () => {
               >
                 {t(product, 'name')}
               </motion.h1>
-              
-              {product.brand?.logo && (
-                <Link 
-                  to={`/marchi/${product.brand.slug}`}
-                  className="hidden sm:block flex-shrink-0 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-gold transition-all"
-                >
-                  <img 
-                    src={product.brand.logo} 
-                    alt={product.brandName} 
-                    className="h-12 w-auto object-contain"
-                  />
-                </Link>
-              )}
             </div>
 
             <div className="text-4xl font-display font-bold text-gold mb-10 flex items-center gap-2">
