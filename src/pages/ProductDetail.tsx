@@ -147,14 +147,15 @@ export const ProductDetailPage = () => {
               </motion.h1>
             </div>
 
-            <div className="text-4xl font-display font-bold text-gold mb-10 flex items-center gap-2">
-              <Euro size={32} />
-              {product.price 
-                ? Number(product.price).toLocaleString('it-IT', { minimumFractionDigits: 2 })
-                : 'Trattativa Riservata'
-              }
-              {product.price && <span className="text-sm font-medium text-slate-400 ml-2 italic">+ IVA</span>}
-            </div>
+            {product.price ? (
+              <div className="text-4xl font-display font-bold text-gold mb-10 flex items-center gap-2">
+                <Euro size={32} />
+                {Number(product.price).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                <span className="text-sm font-medium text-slate-400 ml-2 italic">+ IVA</span>
+              </div>
+            ) : (
+              <div className="mb-10"></div>
+            )}
 
             <div className="prose prose-slate max-w-none mb-12">
               <h3 className="text-lg font-bold text-brand-900 mb-3 italic">Descrizione Prodotto</h3>
