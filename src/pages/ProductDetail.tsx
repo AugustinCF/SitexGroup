@@ -57,11 +57,17 @@ export const ProductDetailPage = () => {
       {/* Breadcrumbs */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-500 overflow-x-auto no-scrollbar whitespace-nowrap">
             <Link to="/" className="hover:text-gold transition-colors">Home</Link>
-            <ChevronRight size={16} />
+            <ChevronRight size={16} className="flex-shrink-0" />
             <Link to="/catalogo" className="hover:text-gold transition-colors">Catalogo</Link>
-            <ChevronRight size={16} />
+            {product.category && (
+              <>
+                <ChevronRight size={16} className="flex-shrink-0" />
+                <Link to={`/categorie/${product.category.slug}`} className="hover:text-gold transition-colors">{product.categoryName}</Link>
+              </>
+            )}
+            <ChevronRight size={16} className="flex-shrink-0" />
             <span className="text-brand-900 truncate">{t(product, 'name')}</span>
           </div>
         </div>
@@ -100,31 +106,52 @@ export const ProductDetailPage = () => {
 
           {/* Info Section */}
           <div className="flex flex-col">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
               <span className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white ${product.condition === 'Usato' ? 'bg-orange-500' : 'bg-green-600'}`}>
                 {product.condition || 'Nuovo'}
               </span>
-              <div className="flex gap-2">
-                {product.categoryName && (
-                  <span className="flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              <div className="flex flex-wrap gap-2">
+                {product.category && (
+                  <Link 
+                    to={`/categorie/${product.category.slug}`}
+                    className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 transition-colors px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500"
+                  >
                     <Layers size={12} /> {product.categoryName}
-                  </span>
+                  </Link>
                 )}
-                {product.brandName && (
-                  <span className="flex items-center gap-1 bg-gold/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-gold">
+                {product.brand && (
+                  <Link 
+                    to={`/marchi/${product.brand.slug}`}
+                    className="flex items-center gap-1 bg-gold/10 hover:bg-gold/20 transition-colors px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-gold"
+                  >
                     <Tag size={12} /> {product.brandName}
-                  </span>
+                  </Link>
                 )}
               </div>
             </div>
 
-            <motion.h1 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-4xl md:text-5xl font-display font-bold text-brand-900 mb-6 italic"
-            >
-              {t(product, 'name')}
-            </motion.h1>
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <motion.h1 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-4xl md:text-5xl font-display font-bold text-brand-900 italic leading-tight"
+              >
+                {t(product, 'name')}
+              </motion.h1>
+              
+              {product.brand?.logo && (
+                <Link 
+                  to={`/marchi/${product.brand.slug}`}
+                  className="hidden sm:block flex-shrink-0 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-gold transition-all"
+                >
+                  <img 
+                    src={product.brand.logo} 
+                    alt={product.brandName} 
+                    className="h-12 w-auto object-contain"
+                  />
+                </Link>
+              )}
+            </div>
 
             <div className="text-4xl font-display font-bold text-gold mb-10 flex items-center gap-2">
               <Euro size={32} />
